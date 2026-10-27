@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 import WebKit
 
@@ -173,10 +174,15 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         let leave = UIButton(configuration: .borderless(), primaryAction: UIAction(title: "서재로") { [weak self] _ in
             self?.onLeave?()
         })
+        let help = UIButton(configuration: .borderless(), primaryAction: UIAction(title: "연결하는 법", image: UIImage(systemName: "questionmark.circle")) { [weak self] _ in
+            guard let self else { return }
+            self.present(UIHostingController(rootView: ConnectionHelpView(host: self.startURL.host)), animated: true)
+        })
         errorView.addArrangedSubview(errorLabel)
         errorView.addArrangedSubview(retry)
         errorView.addArrangedSubview(change)
         errorView.addArrangedSubview(leave)
+        errorView.addArrangedSubview(help)
         leaveButton = leave
         view.addSubview(errorView)
         NSLayoutConstraint.activate([

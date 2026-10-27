@@ -124,7 +124,11 @@ struct SetupView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("서재").font(.largeTitle.bold())
+            HStack {
+                Text("서재").font(.largeTitle.bold())
+                Spacer()
+                ConnectionHelpButton()
+            }
             Text("맥에서 서재 서버(`node library/server.mjs <폴더>`)를 켜면 터미널에 ‘iPad 권장 주소’가 나옵니다. 토큰(?t=…)까지 포함한 주소를 넣어 주세요.")
                 .foregroundStyle(.secondary)
             TextField("http://맥이름.local:5173/?t=…", text: $text)
@@ -187,5 +191,66 @@ struct ReviewWebView: UIViewControllerRepresentable {
         controller.onPencil = onPencil
         controller.session = session
         session.controller = controller
+    }
+}
+
+/// The ? next to a connection problem: how to start the Mac server and get its address onto the iPad.
+struct ConnectionHelpButton: View {
+    var host: String?
+    @State private var showing = false
+
+    var body: some View {
+        Button { showing = true } label: {
+            Image(systemName: "questionmark.circle").font(.title2)
+        }
+        .accessibilityLabel("연결하는 법")
+        .sheet(isPresented: $showing) { ConnectionHelpView(host: host) }
+    }
+}
+
+struct ConnectionHelpView: View {
+    var host: String?
+    @Environment(\.dismiss) private var dismiss
+    private let command = "node library/server.mjs <문서 폴더>"
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("처음 연결하기") {
+                    step(1, "맥과 iPad를 같은 Wi-Fi에 연결합니다.")
+                    step(2, "맥의 터미널에서 InkBridge 폴더로 가서 서버를 켭니다. 필기할 문서가 든 폴더를 지정합니다.")
+                    HStack {
+                        Text(command).font(.callout.monospaced()).textSelection(.enabled)
+                        Spacer()
+                        Button("복사") { UIPasteboard.general.string = command }
+                    }
+                    step(3, "터미널에 나온 ‘iPad 권장 주소’(http://맥이름.local:5173/?t=…)를 복사합니다. 같은 Apple 계정이면 맥에서 복사한 것을 iPad에서 바로 붙여넣을 수 있습니다.")
+                    step(4, "서재의 ‘서버 주소 바꾸기’에서 주소를 붙여넣고 ‘연결’을 누릅니다. 주소는 앱이 기억합니다.")
+                }
+                Section("연결이 안 될 때") {
+                    check("터미널 창이 열려 있고 서버가 켜져 있는지", "창을 닫거나 맥이 잠자기에 들어가면 서버도 멈춥니다.")
+                    check("iPad가 로컬 네트워크를 쓸 수 있는지", "설정 → 개인정보 보호 및 보안 → 로컬 네트워크에서 InkBridge Pad를 켭니다.")
+                    check("맥 방화벽이 막고 있지 않은지", "처음 켤 때 node의 수신 연결을 묻는 창이 뜨면 허용합니다.")
+                    check("주소가 그대로인지", "포트를 바꾸거나 --new-token으로 켜면 주소가 바뀝니다. 터미널의 새 주소를 다시 넣어 주세요.")
+                    if let host, !host.isEmpty {
+                        LabeledContent("지금 연결하려는 맥", value: host)
+                    }
+                }
+            }
+            .navigationTitle("맥 서버에 연결하는 법")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("닫기") { dismiss() } } }
+        }
+    }
+
+    private func step(_ n: Int, _ text: String) -> some View {
+        Label { Text(text) } icon: { Image(systemName: "\(n).circle.fill").foregroundStyle(.tint) }
+    }
+
+    private func check(_ title: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.headline)
+            Text(detail).foregroundStyle(.secondary)
+        }
     }
 }

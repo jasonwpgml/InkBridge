@@ -312,7 +312,11 @@ struct LibraryView: View {
 
     private var unreachable: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: "wifi.exclamationmark").font(.system(size: 40, weight: .light))
+            HStack(alignment: .top) {
+                Image(systemName: "wifi.exclamationmark").font(.system(size: 40, weight: .light))
+                Spacer()
+                ConnectionHelpButton(host: client.server.origin.host).foregroundStyle(.primary)
+            }
             Text("맥 서버에 연결할 수 없습니다").font(.title2.bold())
             Text("맥에서 서재 서버가 켜져 있고 같은 Wi-Fi인지 확인해 주세요.\n\(client.server.origin.host ?? "")")
                 .foregroundStyle(.white.opacity(0.75))
