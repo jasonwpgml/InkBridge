@@ -136,7 +136,7 @@ struct LibraryAisle: View {
     private var aisle: some View {
         let count = items.count
         return ScrollView(.horizontal) {
-            LazyHStack(spacing: 44) {
+            LazyHStack(spacing: 14) {
                 ForEach(0..<(count * Self.laps), id: \.self) { index in
                     let item = items[index % count]
                     BookcaseEnd(item: item, approaching: approaching == index)
@@ -193,12 +193,15 @@ struct LibraryAisle: View {
 
 // MARK: - Bookcase drawing
 
-private let caseHeight: CGFloat = 500
-private let sideWidth: CGFloat = 170
-private let frontWidth: CGFloat = 160
+private let caseHeight: CGFloat = 520
+/// The end panel is as deep as the shelves; the front with the books runs long, like the stacks of a library.
+private let endWidth: CGFloat = 86
+private let frontLength: CGFloat = 380
+private let walnut = Color(red: 0.33, green: 0.21, blue: 0.13)
+private let walnutDark = Color(red: 0.17, green: 0.1, blue: 0.06)
 
-/// A bookcase seen from the end of its aisle: the side panel almost facing you with the Mac's name on it, and the
-/// front with its books turning away. While approaching, the front turns to face you and the side folds away.
+/// A long bookcase seen from the end of its aisle at an angle: the narrow end panel with the Mac's name on a range
+/// card, and the front full of books running away from you. While approaching, the front turns to face you.
 private struct BookcaseEnd: View {
     let item: AisleItem
     let approaching: Bool
@@ -206,18 +209,18 @@ private struct BookcaseEnd: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            side
-                .frame(width: sideWidth, height: caseHeight)
-                .rotation3DEffect(.degrees(approaching ? 88 : 16), axis: (x: 0, y: 1, z: 0), anchor: .trailing, perspective: 0.45)
+            end
+                .frame(width: endWidth, height: caseHeight)
+                .rotation3DEffect(.degrees(approaching ? -88 : -30), axis: (x: 0, y: 1, z: 0), anchor: .trailing, perspective: 0.5)
             front
-                .frame(width: frontWidth, height: caseHeight)
-                .rotation3DEffect(.degrees(approaching ? 0 : -66), axis: (x: 0, y: 1, z: 0), anchor: .leading, perspective: 0.45)
+                .frame(width: frontLength, height: caseHeight)
+                .rotation3DEffect(.degrees(approaching ? 0 : 55), axis: (x: 0, y: 1, z: 0), anchor: .leading, perspective: 0.5)
         }
-        // Edge-on, the side takes almost no room, so the opened front ends up in the middle.
-        .offset(x: approaching ? -sideWidth / 2 : 0)
-        .frame(width: approaching ? sideWidth + frontWidth : sideWidth + 70, height: caseHeight, alignment: .leading)
-        .scaleEffect(approaching ? 1.15 : 1)
-        .shadow(color: .black.opacity(scheme == .dark ? 0.55 : 0.25), radius: 24, x: 10, y: 22)
+        // Edge-on, the end panel takes almost no room, so the turned front ends up in the middle.
+        .offset(x: approaching ? -endWidth / 2 : 0)
+        .frame(width: approaching ? endWidth + frontLength : 250, height: caseHeight, alignment: .leading)
+        .scaleEffect(approaching ? 1.1 : 1)
+        .shadow(color: .black.opacity(scheme == .dark ? 0.55 : 0.25), radius: 20, x: 14, y: 18)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityAddTraits(.isButton)
@@ -231,34 +234,25 @@ private struct BookcaseEnd: View {
         }
     }
 
-    @ViewBuilder private var side: some View {
+    @ViewBuilder private var end: some View {
         switch item {
         case .mac(let bookcase):
-            WoodPanel {
-                NamePlate(title: bookcase.title, caption: "MAC 서재")
-            }
+            EndPanel { RangeCard(caption: "MAC", title: bookcase.title) }
         case .add:
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(.primary.opacity(0.45), style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
-                .overlay {
-                    VStack(spacing: 14) {
-                        Image(systemName: "plus").font(.system(size: 34, weight: .light))
-                        Text("책장 추가").font(.title3.weight(.semibold))
-                        Text("맥 서재 서버\n주소를 넣으면\n책장이 섭니다").font(.footnote).multilineTextAlignment(.center)
-                            .foregroundStyle(.primary.opacity(0.65))
-                    }
-                }
+            RoundedRectangle(cornerRadius: 3)
+                .strokeBorder(.primary.opacity(0.45), style: StrokeStyle(lineWidth: 2, dash: [7, 5]))
+                .overlay { Image(systemName: "plus").font(.system(size: 26, weight: .light)) }
         case .cloud:
             // Material rather than glassCard: Liquid Glass ignores the perspective of rotation3DEffect.
-            RoundedRectangle(cornerRadius: 6)
-                .fill(.ultraThinMaterial)
-                .overlay { RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(0.2)) }
+            Rectangle().fill(.ultraThinMaterial)
+                .overlay { Rectangle().strokeBorder(.primary.opacity(0.2)) }
                 .overlay {
-                    VStack(spacing: 14) {
-                        Image(systemName: "lock.fill").font(.system(size: 30, weight: .light))
-                        Text("공용\n클라우드 서재").font(.system(.title3, design: .serif).weight(.semibold)).multilineTextAlignment(.center)
-                        Text("준비 중").font(.footnote.weight(.medium)).tracking(3).foregroundStyle(.primary.opacity(0.6))
+                    VStack(spacing: 10) {
+                        Image(systemName: "lock.fill").font(.system(size: 22, weight: .light))
+                        Text("공용\n클라우드").font(.system(size: 13, weight: .semibold, design: .serif)).multilineTextAlignment(.center)
+                        Text("준비 중").font(.system(size: 10, weight: .medium)).foregroundStyle(.primary.opacity(0.6))
                     }
+                    .offset(y: -caseHeight * 0.16)
                 }
         }
     }
@@ -266,80 +260,83 @@ private struct BookcaseEnd: View {
     @ViewBuilder private var front: some View {
         switch item {
         case .mac(let bookcase):
-            BookRows(seed: bookcase.seed)
+            Stack(seed: bookcase.seed, header: bookcase.title)
         case .add:
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(.primary.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
+            RoundedRectangle(cornerRadius: 3)
+                .strokeBorder(.primary.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [7, 5]))
+                .overlay {
+                    VStack(spacing: 8) {
+                        Text("책장 추가").font(.title3.weight(.semibold))
+                        Text("맥 서재 서버 주소를 넣으면\n여기에 책장이 섭니다").font(.footnote).multilineTextAlignment(.center)
+                            .foregroundStyle(.primary.opacity(0.65))
+                    }
+                }
         case .cloud:
-            // Shelves behind frosted glass, not yet open.
-            BookRows(seed: 7)
-                .opacity(0.35)
+            // Shelves behind frosted glass, not open yet.
+            Stack(seed: 7, header: "공용 클라우드 서재")
+                .opacity(0.4)
                 .overlay { Rectangle().fill(.ultraThinMaterial).overlay { Rectangle().strokeBorder(.primary.opacity(0.15)) } }
         }
     }
 }
 
-/// The walnut end panel of a bookcase: a raised panel in a frame, on a darker plinth.
-private struct WoodPanel<Content: View>: View {
+/// The narrow walnut end of a bookcase: top cap, plinth and the range card that names it.
+private struct EndPanel<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(red: 0.36, green: 0.24, blue: 0.15), Color(red: 0.24, green: 0.15, blue: 0.09)],
-                           startPoint: .leading, endPoint: .trailing)
+        ZStack(alignment: .top) {
+            LinearGradient(colors: [walnut, Color(red: 0.26, green: 0.16, blue: 0.1)], startPoint: .leading, endPoint: .trailing)
             Canvas { context, size in
-                // Long vertical grain.
-                for i in 0..<14 {
-                    let x = size.width * (0.05 + 0.065 * CGFloat(i))
+                for i in 0..<6 {
+                    let x = size.width * (0.12 + 0.15 * CGFloat(i))
                     var path = Path()
                     path.move(to: CGPoint(x: x, y: 0))
-                    path.addCurve(to: CGPoint(x: x + 3, y: size.height),
-                                  control1: CGPoint(x: x + (i.isMultiple(of: 2) ? 5 : -4), y: size.height * 0.35),
-                                  control2: CGPoint(x: x - 3, y: size.height * 0.7))
-                    context.stroke(path, with: .color(.black.opacity(0.12)), lineWidth: 0.7)
+                    path.addCurve(to: CGPoint(x: x + 2, y: size.height),
+                                  control1: CGPoint(x: x + (i.isMultiple(of: 2) ? 4 : -3), y: size.height * 0.4),
+                                  control2: CGPoint(x: x - 2, y: size.height * 0.75))
+                    context.stroke(path, with: .color(.black.opacity(0.13)), lineWidth: 0.7)
                 }
             }
-            RoundedRectangle(cornerRadius: 3)
-                .strokeBorder(LinearGradient(colors: [.white.opacity(0.22), .black.opacity(0.35)], startPoint: .topLeading, endPoint: .bottomTrailing),
-                              lineWidth: 2)
-                .padding(.horizontal, 16).padding(.top, 22).padding(.bottom, 54)
-            VStack {
+            VStack(spacing: 0) {
+                Rectangle().fill(walnutDark).frame(height: 16)
                 Spacer()
-                Rectangle().fill(Color(red: 0.16, green: 0.1, blue: 0.06)).frame(height: 34)
+                Rectangle().fill(walnutDark).frame(height: 34)
             }
-            content.padding(.horizontal, 22)
+            content.padding(.horizontal, 10).padding(.top, caseHeight * 0.2)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }
 
-/// The brass plate on the end panel that names the bookcase.
-private struct NamePlate: View {
-    let title: String
+/// The card on the end of a library range, in a brass holder.
+private struct RangeCard: View {
     let caption: String
+    let title: String
 
     var body: some View {
-        VStack(spacing: 6) {
-            Text(caption).font(.system(size: 10, weight: .semibold)).tracking(2.5).opacity(0.75)
-            Text(title).font(.system(size: 17, weight: .semibold, design: .serif))
-                .multilineTextAlignment(.center).lineLimit(3).minimumScaleFactor(0.7)
+        VStack(spacing: 4) {
+            Text(caption).font(.system(size: 9, weight: .bold)).tracking(2).opacity(0.6)
+            Text(title).font(.system(size: 13, weight: .semibold, design: .serif))
+                .multilineTextAlignment(.center).lineLimit(4).minimumScaleFactor(0.6)
         }
-        .foregroundStyle(Color(red: 0.24, green: 0.16, blue: 0.06))
-        .padding(.horizontal, 12).padding(.vertical, 12)
+        .foregroundStyle(Color(red: 0.16, green: 0.12, blue: 0.08))
+        .padding(.horizontal, 6).padding(.vertical, 10)
         .frame(maxWidth: .infinity)
+        .background(Color(red: 0.96, green: 0.93, blue: 0.85), in: RoundedRectangle(cornerRadius: 2))
+        .padding(3)
         .background(
-            LinearGradient(colors: [Color(red: 0.93, green: 0.8, blue: 0.5), Color(red: 0.72, green: 0.56, blue: 0.27)],
+            LinearGradient(colors: [Color(red: 0.9, green: 0.76, blue: 0.45), Color(red: 0.62, green: 0.47, blue: 0.22)],
                            startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: 4)
+            in: RoundedRectangle(cornerRadius: 3)
         )
-        .shadow(color: .black.opacity(0.4), radius: 2, y: 2)
-        .offset(y: -60)
+        .shadow(color: .black.opacity(0.4), radius: 1.5, y: 1.5)
     }
 }
 
-/// The front of a bookcase: five shelves of cloth-bound spines.
-private struct BookRows: View {
+/// The front of a long bookcase: a top board with its name, six shelves of cloth-bound books in three bays, a plinth.
+private struct Stack: View {
     let seed: Int
+    let header: String
     private static let cloth: [Color] = [
         Color(red: 0.13, green: 0.2, blue: 0.36), Color(red: 0.45, green: 0.14, blue: 0.13), Color(red: 0.15, green: 0.3, blue: 0.22),
         Color(red: 0.62, green: 0.45, blue: 0.2), Color(red: 0.3, green: 0.32, blue: 0.36), Color(red: 0.34, green: 0.18, blue: 0.32),
@@ -353,33 +350,41 @@ private struct BookRows: View {
                 state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
                 return CGFloat(state >> 33) / CGFloat(UInt32.max >> 1)
             }
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.12, green: 0.08, blue: 0.05)))
-            let rows = 5
-            let plinth: CGFloat = 34
-            let rowHeight = (size.height - plinth - 14) / CGFloat(rows)
-            for row in 0..<rows {
-                let floor = 14 + rowHeight * CGFloat(row + 1)
-                var x: CGFloat = 6
-                while x < size.width - 10 {
-                    let width = 7 + next() * 9
-                    let height = rowHeight * (0.62 + next() * 0.3)
-                    if next() < 0.06 { x += width; continue } // a gap where a book is out
-                    let rect = CGRect(x: x, y: floor - height, width: min(width, size.width - 6 - x), height: height)
-                    let color = Self.cloth[Int(next() * CGFloat(Self.cloth.count)) % Self.cloth.count]
-                    context.fill(Path(rect), with: .color(color))
-                    context.fill(Path(CGRect(x: rect.minX, y: rect.minY + height * 0.18, width: rect.width, height: 2)),
-                                 with: .color(Color(red: 0.86, green: 0.72, blue: 0.42).opacity(0.7)))
-                    x += width + 1
+            let cap: CGFloat = 26, plinth: CGFloat = 34, post: CGFloat = 8
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.1, green: 0.065, blue: 0.04)))
+            let rows = 6
+            let rowHeight = (size.height - cap - plinth) / CGFloat(rows)
+            let bays = 3
+            let bayWidth = (size.width - post * CGFloat(bays + 1)) / CGFloat(bays)
+            for bay in 0..<bays {
+                let left = post + CGFloat(bay) * (bayWidth + post)
+                for row in 0..<rows {
+                    let floor = cap + rowHeight * CGFloat(row + 1) - 5
+                    var x = left + 2
+                    while x < left + bayWidth - 4 {
+                        let width = 6 + next() * 8
+                        let height = rowHeight * (0.6 + next() * 0.3)
+                        if next() < 0.05 { x += width; continue } // a gap where a book is out
+                        let rect = CGRect(x: x, y: floor - height, width: min(width, left + bayWidth - 2 - x), height: height)
+                        context.fill(Path(rect), with: .color(Self.cloth[Int(next() * CGFloat(Self.cloth.count)) % Self.cloth.count]))
+                        context.fill(Path(CGRect(x: rect.minX, y: rect.minY + height * 0.16, width: rect.width, height: 1.6)),
+                                     with: .color(Color(red: 0.86, green: 0.72, blue: 0.42).opacity(0.7)))
+                        x += width + 0.8
+                    }
+                    context.fill(Path(CGRect(x: left, y: floor, width: bayWidth, height: 5)), with: .color(walnut))
                 }
-                context.fill(Path(CGRect(x: 0, y: floor, width: size.width, height: 6)), with: .color(Color(red: 0.3, green: 0.2, blue: 0.12)))
             }
-            context.fill(Path(CGRect(x: 0, y: size.height - plinth, width: size.width, height: plinth)),
-                         with: .color(Color(red: 0.16, green: 0.1, blue: 0.06)))
+            for i in 0...bays {
+                context.fill(Path(CGRect(x: CGFloat(i) * (bayWidth + post), y: 0, width: post, height: size.height)), with: .color(walnut))
+            }
+            context.fill(Path(CGRect(x: 0, y: 0, width: size.width, height: cap)), with: .color(walnutDark))
+            context.fill(Path(CGRect(x: 0, y: size.height - plinth, width: size.width, height: plinth)), with: .color(walnutDark))
+            context.draw(Text(header).font(.system(size: 13, weight: .semibold, design: .serif)).foregroundStyle(Color(red: 0.88, green: 0.74, blue: 0.45)),
+                         at: CGPoint(x: size.width / 2, y: cap / 2))
             // Light falls off toward the back of the aisle.
             context.fill(Path(CGRect(origin: .zero, size: size)),
-                         with: .linearGradient(Gradient(colors: [.clear, .black.opacity(0.45)]),
+                         with: .linearGradient(Gradient(colors: [.clear, .black.opacity(0.5)]),
                                                startPoint: .zero, endPoint: CGPoint(x: size.width, y: 0)))
         }
-        .clipShape(RoundedRectangle(cornerRadius: 3))
     }
 }
