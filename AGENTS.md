@@ -40,6 +40,7 @@ InkBridge Pad takes launch arguments, so a screen can be opened and captured hea
 
 - `-padMode home|screen|library` opens that mode directly.
 - `-serverURL "http://localhost:<port>/?t=<token>"` sets the library server (kept for later launches). The token is in `<folder>/.pencil-review/token`.
+- `-appearance light|dark|system` overrides 설정 → 화면 모드 for that launch.
 
 ```sh
 xcrun simctl install booted "build/DerivedData/Build/Products/Debug-iphonesimulator/InkBridge Pad.app"

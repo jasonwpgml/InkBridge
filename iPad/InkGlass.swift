@@ -22,6 +22,79 @@ struct InkGlass<S: Shape>: ViewModifier {
     }
 }
 
+/// A sheet laid out as glass panels over the ink wash, titled, with 완료 in the corner.
+struct GlassSheet<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                HStack {
+                    Text(title).font(.title.bold())
+                    Spacer()
+                    Button { dismiss() } label: { Text("완료").font(.headline).padding(.horizontal, 22).frame(height: 44) }
+                        .buttonStyle(.plain)
+                        .glassCard(Capsule())
+                }
+                content
+            }
+            .padding(28)
+        }
+        .scrollIndicators(.hidden)
+        .background { InkBackdrop() }
+    }
+}
+
+/// A glass panel in a GlassSheet, with an optional heading above and note below.
+struct GlassSection<Content: View>: View {
+    var title: String?
+    var footer: String?
+    @ViewBuilder let content: Content
+
+    init(_ title: String? = nil, footer: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.footer = footer
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title { Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.leading, 8) }
+            VStack(alignment: .leading, spacing: 14) { content }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .glassCard(RoundedRectangle(cornerRadius: 26), interactive: false)
+            if let footer { Text(footer).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 8) }
+        }
+    }
+}
+
+/// One of a row of choices inside a GlassSection; the chosen one is inked in.
+struct GlassChoice: View {
+    let title: String
+    var symbol: String?
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 18)
+        Button(action: action) {
+            VStack(spacing: 8) {
+                if let symbol { Image(systemName: symbol).font(.title2) }
+                Text(title).font(.subheadline.weight(selected ? .semibold : .regular))
+            }
+            .frame(maxWidth: .infinity, minHeight: 78)
+            .background(.primary.opacity(selected ? 0.12 : 0), in: shape)
+            .overlay(shape.strokeBorder(.primary.opacity(selected ? 0.55 : 0.14), lineWidth: selected ? 1.5 : 1))
+            .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
 extension View {
     func inkGlass<S: Shape>(_ shape: S) -> some View { modifier(InkGlass(shape: shape)) }
 

@@ -8,37 +8,44 @@ struct ConnectionView: View {
     @State private var code = ""
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("가까운 맥") {
-                    if link.nearby.isEmpty {
-                        Text("맥에서 InkBridge Mac을 열어 주세요. 두 기기의 Wi-Fi와 로컬 네트워크 접근을 켜야 합니다.")
-                            .foregroundStyle(.secondary)
-                        ProgressView("맥 찾는 중")
-                    }
-                    ForEach(link.nearby, id: \.self) { peer in
-                        Button { selected = peer } label: {
-                            HStack {
-                                Label(peer.displayName, systemImage: "laptopcomputer")
-                                Spacer()
-                                if selected == peer { Image(systemName: "checkmark") }
-                            }
-                        }
-                    }
+        GlassSheet(title: "맥 연결") {
+            GlassSection("가까운 맥") {
+                if link.nearby.isEmpty {
+                    Text("맥에서 InkBridge Mac을 열어 주세요. 두 기기의 Wi-Fi와 로컬 네트워크 접근을 켜야 합니다.")
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 10) { ProgressView(); Text("맥 찾는 중").foregroundStyle(.secondary) }
                 }
-                Section("맥에 표시된 6자리 코드") {
-                    TextField("연결 코드", text: $code).keyboardType(.numberPad)
-                        .onChange(of: code) { _, value in code = String(value.filter(\.isNumber).prefix(6)) }
-                    Button("연결") { if let selected { link.connect(to: selected, code: code) } }
-                        .disabled(selected == nil || code.count != 6 || link.connectedName != nil)
+                ForEach(link.nearby, id: \.self) { peer in
+                    GlassChoice(title: peer.displayName, symbol: "laptopcomputer", selected: selected == peer) { selected = peer }
                 }
-                Section { Text(link.status).foregroundStyle(.secondary) }
-                if link.connectedName != nil { Button("연결 해제", role: .destructive) { link.disconnect() } }
             }
-            .navigationTitle("맥 연결")
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("완료") { dismiss() } } }
-            .onChange(of: link.connectedName) { _, name in if name != nil { dismiss() } }
+            GlassSection("맥에 표시된 6자리 코드") {
+                TextField("연결 코드", text: $code).keyboardType(.numberPad)
+                    .font(.title2.monospacedDigit())
+                    .padding(.horizontal, 16).frame(height: 52)
+                    .background(.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+                    .onChange(of: code) { _, value in code = String(value.filter(\.isNumber).prefix(6)) }
+                let ready = selected != nil && code.count == 6 && link.connectedName == nil
+                Button { if let selected { link.connect(to: selected, code: code) } } label: {
+                    Text("연결").font(.headline).frame(maxWidth: .infinity).frame(height: 50)
+                }
+                .buttonStyle(.plain)
+                .glassCard(Capsule())
+                .disabled(!ready)
+                .opacity(ready ? 1 : 0.45)
+            }
+            GlassSection(footer: nil) {
+                Text(link.status).foregroundStyle(.secondary)
+                if link.connectedName != nil {
+                    Button(role: .destructive) { link.disconnect() } label: {
+                        Text("연결 해제").font(.headline).foregroundStyle(.red).frame(maxWidth: .infinity).frame(height: 48)
+                    }
+                    .buttonStyle(.plain)
+                    .glassCard(Capsule())
+                }
+            }
         }
+        .onChange(of: link.connectedName) { _, name in if name != nil { dismiss() } }
     }
 }
 
@@ -106,6 +113,7 @@ enum PadMode: String {
     @State private var mode = PadMode.launch
     @State private var sidecarGuide = false
     @AppStorage(DocumentServer.key) private var serverURL = ""
+    @AppStorage(Appearance.key) private var appearance = Appearance.system
 
     init() { DocumentServer.adoptLaunchArgument() }
 
@@ -127,6 +135,8 @@ enum PadMode: String {
                 }
             }
             .sheet(isPresented: $sidecarGuide) { SidecarGuide() }
+            .onAppear { appearance.apply() }
+            .onChange(of: appearance) { _, chosen in chosen.apply() }
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active { model.persist() }
                 if phase == .background { model.link.suspend() }

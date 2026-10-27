@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// 서재 (library): the Mac server's documents as books on glass shelves. Opening one hands it to the reader
+// 서재 (library): the Mac server's documents as books on wooden shelves. Opening one hands it to the reader
 // (ReviewWebView); importing uploads PDF and Office files from the iPad into the Mac folder's imported/.
 
 /// One document on the shelf, as GET /__pr/api/pages lists it.
@@ -177,6 +177,7 @@ struct LibraryView: View {
     var leave: () -> Void
     @State private var query = ""
     @State private var importing = false
+    @State private var settings = false
     @AppStorage(ReadingHistory.key) private var recentStored = ""
 
     init(server: LibraryServer, open: @escaping (Book) -> Void, changeServer: @escaping () -> Void, leave: @escaping () -> Void) {
@@ -201,7 +202,7 @@ struct LibraryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 40) {
                     if !client.loaded {
-                        ProgressView("서재를 여는 중").tint(.white).frame(maxWidth: .infinity).padding(.top, 120)
+                        ProgressView("서재를 여는 중").tint(.primary).frame(maxWidth: .infinity).padding(.top, 120)
                     } else if client.unreachable && client.books.isEmpty {
                         unreachable
                     } else if client.books.isEmpty && client.pending.isEmpty {
@@ -217,7 +218,7 @@ struct LibraryView: View {
                             }
                         }
                         if shown.isEmpty {
-                            Text("‘\(query)’와 맞는 책이 없습니다.").foregroundStyle(.white.opacity(0.7)).padding(.horizontal, 32)
+                            Text("‘\(query)’와 맞는 책이 없습니다.").foregroundStyle(.primary.opacity(0.7)).padding(.horizontal, 32)
                         }
                     }
                 }
@@ -227,14 +228,14 @@ struct LibraryView: View {
             .scrollIndicators(.hidden)
             .safeAreaInset(edge: .top) { header }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .background { InkBackdrop() }
-        .preferredColorScheme(.dark)
         .task { await client.watch() }
         .fileImporter(isPresented: $importing, allowedContentTypes: Self.importable, allowsMultipleSelection: true) { result in
             if case .success(let urls) = result { Task { await client.importFiles(urls) } }
         }
         .overlay(alignment: .bottom) { noticeBanner }
+        .sheet(isPresented: $settings) { SettingsView() }
     }
 
     private func read(_ book: Book) {
@@ -255,17 +256,17 @@ struct LibraryView: View {
                 .accessibilityLabel("처음 화면으로")
             Text("서재").font(.largeTitle.bold())
             if client.uploads > 0 {
-                ProgressView().tint(.white)
-                Text("가져오는 중").font(.subheadline).foregroundStyle(.white.opacity(0.75))
+                ProgressView().tint(.primary)
+                Text("가져오는 중").font(.subheadline).foregroundStyle(.primary.opacity(0.75))
             } else if client.unreachable && client.loaded && !client.books.isEmpty {
                 Label("맥 연결 끊김", systemImage: "wifi.exclamationmark").font(.subheadline).foregroundStyle(.orange)
             }
             Spacer(minLength: 12)
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.white.opacity(0.6))
+                Image(systemName: "magnifyingglass").foregroundStyle(.primary.opacity(0.6))
                 TextField("책 찾기", text: $query).textInputAutocapitalization(.never).autocorrectionDisabled()
                 if !query.isEmpty {
-                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.white.opacity(0.6)) }
+                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.primary.opacity(0.6)) }
                         .accessibilityLabel("검색어 지우기")
                 }
             }
@@ -278,6 +279,7 @@ struct LibraryView: View {
             Menu {
                 Button { Task { await client.refresh() } } label: { Label("새로고침", systemImage: "arrow.clockwise") }
                 Button(action: changeServer) { Label("서버 주소 바꾸기", systemImage: "server.rack") }
+                Button { settings = true } label: { Label("설정", systemImage: "gearshape") }
                 if !client.root.isEmpty { Section("맥 폴더: \(client.root)") {} }
             } label: { Image(systemName: "ellipsis").font(.title3).frame(width: 48, height: 48) }
                 .glassCard(Circle())
@@ -296,7 +298,7 @@ struct LibraryView: View {
             Image(systemName: "books.vertical").font(.system(size: 44, weight: .light))
             Text("서재가 비어 있습니다").font(.title2.bold())
             Text("iPad의 PDF·PowerPoint·Word 파일을 가져오거나, 맥 폴더\(client.root.isEmpty ? "" : "(\(client.root))")에 문서를 넣으면 책장에 꽂힙니다.")
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(.primary.opacity(0.75))
             Button { importing = true } label: {
                 Label("문서 가져오기", systemImage: "plus").font(.headline).padding(.horizontal, 22).frame(height: 48)
             }
@@ -319,7 +321,7 @@ struct LibraryView: View {
             }
             Text("맥 서버에 연결할 수 없습니다").font(.title2.bold())
             Text("맥에서 서재 서버가 켜져 있고 같은 Wi-Fi인지 확인해 주세요.\n\(client.server.origin.host ?? "")")
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(.primary.opacity(0.75))
             HStack(spacing: 12) {
                 Button { Task { await client.refresh() } } label: { Text("다시 시도").font(.headline).padding(.horizontal, 22).frame(height: 48) }
                     .glassCard(Capsule())
@@ -356,8 +358,10 @@ struct LibraryView: View {
 // MARK: Shelves and books
 
 private let coverHeight: CGFloat = 196
+/// Room above the tallest cover for the page block, which rises toward the back of the shelf.
+private let standHeight: CGFloat = coverHeight + 10
 
-/// A row of books standing on a glass ledge, scrolling sideways.
+/// A row of books standing on a wooden shelf, scrolling sideways.
 private struct Shelf: View {
     let title: String
     let books: [Book]
@@ -370,11 +374,11 @@ private struct Shelf: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(title).font(.title2.weight(.semibold))
-                Text("\(books.count)권").font(.subheadline).foregroundStyle(.white.opacity(0.6))
+                Text("\(books.count)권").font(.subheadline).foregroundStyle(.primary.opacity(0.6))
             }
             .padding(.horizontal, 32)
             ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 26) {
+                HStack(alignment: .top, spacing: 22) {
                     ForEach(books) { book in
                         Button { open(book) } label: { BookItem(book: book, server: server) }
                             .buttonStyle(BookPress())
@@ -386,18 +390,49 @@ private struct Shelf: View {
                 .padding(.top, 6)
                 .frame(minWidth: width, alignment: .leading)
                 .background(alignment: .topLeading) {
-                    // The ledge the covers stand on, under their bottom edge and above the titles.
-                    RoundedRectangle(cornerRadius: 7)
-                        .fill(.white.opacity(0.06))
-                        .frame(height: 16)
-                        .glassCard(RoundedRectangle(cornerRadius: 7))
-                        .shadow(color: .black.opacity(0.35), radius: 12, y: 10)
-                        .padding(.horizontal, 20)
-                        .offset(y: 6 + coverHeight - 3)
+                    // Books stand toward the front of the plank's top.
+                    ShelfPlank().padding(.horizontal, 20).offset(y: 6 + standHeight - 12)
                 }
             }
             .scrollIndicators(.hidden)
         }
+    }
+}
+
+/// A walnut plank seen from a little above: the top the books stand on, then its front edge.
+private struct ShelfPlank: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [Color(red: 0.2, green: 0.13, blue: 0.08), Color(red: 0.36, green: 0.24, blue: 0.15)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 16)
+            Rectangle().fill(.white.opacity(0.22)).frame(height: 1)
+            LinearGradient(colors: [Color(red: 0.3, green: 0.2, blue: 0.12), Color(red: 0.19, green: 0.12, blue: 0.07)],
+                           startPoint: .top, endPoint: .bottom)
+                .overlay { WoodGrain().stroke(.black.opacity(0.18), lineWidth: 0.6) }
+                .frame(height: 17)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 2))
+        .shadow(color: .black.opacity(scheme == .dark ? 0.5 : 0.25), radius: 14, y: 12)
+    }
+}
+
+private struct WoodGrain: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        for (i, y) in [0.3, 0.55, 0.78].enumerated() {
+            let base = rect.minY + rect.height * y
+            path.move(to: CGPoint(x: rect.minX, y: base))
+            var x = rect.minX
+            while x < rect.maxX {
+                let next = min(x + 140 + CGFloat(i) * 37, rect.maxX)
+                path.addQuadCurve(to: CGPoint(x: next, y: base), control: CGPoint(x: (x + next) / 2, y: base + (i.isMultiple(of: 2) ? 1.4 : -1.4)))
+                x = next
+            }
+        }
+        return path
     }
 }
 
@@ -406,13 +441,14 @@ private struct BookItem: View {
     let server: LibraryServer
 
     var body: some View {
-        let width = coverHeight * book.kind.aspect
+        let width = coverHeight * book.kind.aspect + book.thickness
         VStack(alignment: .leading, spacing: 6) {
-            BookCover(book: book, server: server, height: coverHeight)
-                .padding(.bottom, 22)
+            BookCover(book: book, server: server, height: coverHeight * book.heightScale)
+                .frame(height: standHeight, alignment: .bottom)
+                .padding(.bottom, 34)
             Text(book.name).font(.subheadline.weight(.semibold)).lineLimit(2)
                 .multilineTextAlignment(.leading)
-            Text(caption).font(.caption).foregroundStyle(.white.opacity(0.62))
+            Text(caption).font(.caption).foregroundStyle(.primary.opacity(0.62))
         }
         .frame(width: width, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -424,65 +460,192 @@ private struct BookItem: View {
     }
 }
 
-/// A cover: the first page when the server rendered one, otherwise a cloth binding with the title.
+private extension Book {
+    /// Stable per book, so its cloth and height don't change between refreshes.
+    var seed: UInt32 { path.unicodeScalars.reduce(UInt32(5381)) { ($0 &* 33) &+ $1.value } }
+
+    /// Real shelves are uneven: covers stand between 88% and 100% of the tallest.
+    var heightScale: CGFloat { 0.88 + CGFloat(seed % 13) / 100 }
+
+    /// Depth of the page block, growing with the page count.
+    var thickness: CGFloat { pageCount.map { min(18, 4 + CGFloat($0).squareRoot() * 1.3) } ?? 6 }
+}
+
+/// Book cloth for covers the server has no page image for, with the stamping that reads on it.
+private struct Cloth {
+    let color: Color
+    let stamp: Color
+
+    private static let gold = Color(red: 0.88, green: 0.75, blue: 0.47)
+    private static let blind = Color(red: 0.1, green: 0.08, blue: 0.06).opacity(0.8)
+    static let all = [
+        Cloth(color: Color(red: 0.13, green: 0.19, blue: 0.33), stamp: gold),   // navy
+        Cloth(color: Color(red: 0.42, green: 0.12, blue: 0.13), stamp: gold),   // oxblood
+        Cloth(color: Color(red: 0.14, green: 0.29, blue: 0.22), stamp: gold),   // forest
+        Cloth(color: Color(red: 0.2, green: 0.2, blue: 0.22), stamp: gold),     // charcoal
+        Cloth(color: Color(red: 0.1, green: 0.31, blue: 0.34), stamp: gold),    // teal
+        Cloth(color: Color(red: 0.31, green: 0.17, blue: 0.3), stamp: gold),    // plum
+        Cloth(color: Color(red: 0.64, green: 0.48, blue: 0.2), stamp: blind),   // ochre
+        Cloth(color: Color(red: 0.69, green: 0.6, blue: 0.46), stamp: blind),   // kraft
+    ]
+}
+
+/// A hardcover seen slightly from the right: the cover, and the page block's fore-edge behind it.
+/// The cover is the first page when the server rendered one, otherwise stamped cloth.
 struct BookCover: View {
     let book: Book
     let server: LibraryServer
     let height: CGFloat
 
     var body: some View {
-        let shape = UnevenRoundedRectangle(topLeadingRadius: 3, bottomLeadingRadius: 3, bottomTrailingRadius: 9, topTrailingRadius: 9)
-        ZStack(alignment: .topLeading) {
-            if let cover = book.cover {
-                CoverImage(request: server.request(cover)) { cloth }
-            } else {
-                cloth
-            }
-            // Spine: a darker strip and a crease along the binding edge.
-            HStack(spacing: 0) {
-                LinearGradient(colors: [.black.opacity(0.38), .black.opacity(0.08)], startPoint: .leading, endPoint: .trailing)
-                    .frame(width: 12)
-                Rectangle().fill(.white.opacity(0.22)).frame(width: 1)
-                Spacer()
-            }
+        let width = height * book.kind.aspect
+        let depth = book.thickness
+        let rise = depth * 0.45
+        let cloth = Cloth.all[Int(book.seed % UInt32(Cloth.all.count))]
+        let board = book.cover == nil ? cloth.color : Color(white: 0.9)
+        ZStack(alignment: .bottomLeading) {
+            ForeEdge(board: board, rise: rise)
+                .frame(width: depth, height: height + rise)
+                .offset(x: width)
+            face(cloth: cloth)
+                .frame(width: width, height: height)
+        }
+        .frame(width: width + depth, height: height + rise, alignment: .bottomLeading)
+        .background(alignment: .bottom) {
+            // Contact shadow on the shelf.
+            Ellipse().fill(.black.opacity(0.7)).frame(height: 10).blur(radius: 4).offset(y: 4)
+        }
+        .shadow(color: .black.opacity(0.35), radius: 9, x: 7, y: 0)
+        .overlay(alignment: .bottomLeading) {
             if book.strokes > 0 {
-                Ribbon().fill(Color(red: 0.92, green: 0.33, blue: 0.3))
-                    .frame(width: 16, height: 30)
-                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
-                    .frame(maxWidth: .infinity, alignment: .topTrailing)
-                    .padding(.trailing, 14)
+                Ribbon().fill(LinearGradient(colors: [Color(red: 0.78, green: 0.2, blue: 0.2), Color(red: 0.55, green: 0.1, blue: 0.12)],
+                                             startPoint: .top, endPoint: .bottom))
+                    .frame(width: 11, height: 24)
+                    .shadow(color: .black.opacity(0.35), radius: 1.5, y: 1)
+                    .offset(x: width * 0.66, y: 20)
             }
         }
-        .frame(width: height * book.kind.aspect, height: height)
-        .clipShape(shape)
-        .overlay(shape.stroke(.white.opacity(0.14)))
-        .shadow(color: .black.opacity(0.45), radius: 10, x: 4, y: 8)
     }
 
-    private var cloth: some View {
-        let hue = Double(book.path.unicodeScalars.reduce(UInt32(5381)) { ($0 &* 33) &+ $1.value } % 360) / 360
+    private func face(cloth: Cloth) -> some View {
+        let shape = UnevenRoundedRectangle(topLeadingRadius: 1.5, bottomLeadingRadius: 1.5, bottomTrailingRadius: 3, topTrailingRadius: 3)
         return ZStack(alignment: .topLeading) {
-            LinearGradient(colors: [Color(hue: hue, saturation: 0.45, brightness: 0.62), Color(hue: hue, saturation: 0.55, brightness: 0.34)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            VStack(alignment: .leading, spacing: 0) {
-                Rectangle().fill(.white.opacity(0.5)).frame(width: 28, height: 1.5).padding(.bottom, 12)
-                Text(book.name).font(.system(size: height * 0.085, weight: .semibold, design: .serif))
-                    .foregroundStyle(.white).lineLimit(5).minimumScaleFactor(0.7)
-                Spacer()
-                Image(systemName: book.kind.symbol).font(.system(size: height * 0.08)).foregroundStyle(.white.opacity(0.6))
+            if let cover = book.cover {
+                CoverImage(request: server.request(cover)) { stamped(cloth) }
+                // Laminate catching the light.
+                LinearGradient(stops: [.init(color: .white.opacity(0), location: 0.35), .init(color: .white.opacity(0.18), location: 0.5),
+                                       .init(color: .white.opacity(0), location: 0.62)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                // Quarter binding: cloth over the spine, the printed page on the boards.
+                ZStack { cloth.color; ClothWeave().stroke(.black.opacity(0.07), lineWidth: 0.5) }
+                    .frame(width: max(14, height * book.kind.aspect * 0.08))
+                    .shadow(color: .black.opacity(0.4), radius: 1, x: 1)
+            } else {
+                stamped(cloth)
             }
-            .padding(.leading, 24).padding(.trailing, 14).padding(.vertical, 18)
+            // Where the board bends round the spine: shadowed wrap, then the hinge groove.
+            HStack(spacing: 0) {
+                LinearGradient(colors: [.black.opacity(0.45), .black.opacity(0.12)], startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 9)
+                Rectangle().fill(.black.opacity(0.35)).frame(width: 1.5)
+                Rectangle().fill(.white.opacity(0.18)).frame(width: 1)
+                Spacer()
+            }
+            LinearGradient(colors: [.white.opacity(0.1), .clear, .black.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+        .clipShape(shape)
+        .overlay(shape.strokeBorder(.white.opacity(0.12), lineWidth: 0.75))
+    }
+
+    private func stamped(_ cloth: Cloth) -> some View {
+        ZStack {
+            cloth.color
+            ClothWeave().stroke(.black.opacity(0.07), lineWidth: 0.5)
+            VStack(spacing: 0) {
+                rules(cloth.stamp)
+                Spacer(minLength: 0)
+                Text(book.name).font(.system(size: height * 0.082, weight: .semibold, design: .serif))
+                    .multilineTextAlignment(.center).lineLimit(5).minimumScaleFactor(0.7)
+                Spacer(minLength: 0)
+                Text(book.kind.shelf).font(.system(size: height * 0.045, weight: .medium, design: .serif)).tracking(2)
+                    .padding(.bottom, 8)
+                rules(cloth.stamp)
+            }
+            .foregroundStyle(cloth.stamp)
+            .shadow(color: .black.opacity(0.35), radius: 0, x: 0, y: -0.5)
+            .padding(.leading, 22).padding(.trailing, 12).padding(.vertical, height * 0.08)
+        }
+    }
+
+    private func rules(_ color: Color) -> some View {
+        VStack(spacing: 2.5) {
+            Rectangle().frame(height: 1.2)
+            Rectangle().frame(height: 0.5)
+        }
+        .foregroundStyle(color.opacity(0.85))
+    }
+}
+
+/// Fine crossed threads of book cloth.
+private struct ClothWeave: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        var y = rect.minY
+        while y < rect.maxY { path.move(to: CGPoint(x: rect.minX, y: y)); path.addLine(to: CGPoint(x: rect.maxX, y: y)); y += 1.6 }
+        var x = rect.minX
+        while x < rect.maxX { path.move(to: CGPoint(x: x, y: rect.minY)); path.addLine(to: CGPoint(x: x, y: rect.maxY)); x += 2.2 }
+        return path
+    }
+}
+
+/// The pages' edges between the two boards, receding up and to the right.
+private struct ForeEdge: View {
+    let board: Color
+    let rise: CGFloat
+
+    var body: some View {
+        Canvas { context, size in
+            let depth = size.width
+            let height = size.height - rise
+            // y of the top edge at x; the bottom is `height` below it.
+            func top(_ x: CGFloat) -> CGFloat { rise * (1 - x / depth) }
+            func band(_ from: CGFloat, _ to: CGFloat, inset: CGFloat) -> Path {
+                Path { path in
+                    path.move(to: CGPoint(x: from, y: top(from) + inset))
+                    path.addLine(to: CGPoint(x: to, y: top(to) + inset))
+                    path.addLine(to: CGPoint(x: to, y: top(to) + height - inset))
+                    path.addLine(to: CGPoint(x: from, y: top(from) + height - inset))
+                    path.closeSubpath()
+                }
+            }
+            context.fill(band(0, depth, inset: 0), with: .color(board))
+            context.fill(band(0, depth, inset: 0), with: .color(.black.opacity(0.3)))
+            let boardWidth = min(1.6, depth * 0.15)
+            let pages = band(boardWidth, depth - boardWidth, inset: 1.5)
+            context.fill(pages, with: .linearGradient(Gradient(colors: [Color(red: 0.93, green: 0.9, blue: 0.83), Color(red: 0.72, green: 0.68, blue: 0.6)]),
+                                                     startPoint: .zero, endPoint: CGPoint(x: depth, y: 0)))
+            var x = boardWidth + 0.8
+            var line = 0
+            while x < depth - boardWidth {
+                var edge = Path()
+                edge.move(to: CGPoint(x: x, y: top(x) + 1.5))
+                edge.addLine(to: CGPoint(x: x, y: top(x) + height - 1.5))
+                context.stroke(edge, with: .color(.black.opacity(line % 3 == 0 ? 0.14 : 0.06)), lineWidth: 0.4)
+                x += 0.9
+                line += 1
+            }
         }
     }
 }
 
+/// The tail of a ribbon bookmark hanging out under the pages: the book has notes in it.
 private struct Ribbon: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: rect.minX, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - rect.width * 0.45))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - rect.width * 0.5))
         path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
         path.closeSubpath()
         return path
@@ -495,23 +658,25 @@ private struct BindingItem: View {
 
     var body: some View {
         let failed = book.status == "failed"
+        let width = coverHeight * book.kind.aspect
         VStack(alignment: .leading, spacing: 6) {
             ZStack {
-                RoundedRectangle(cornerRadius: 9).fill(.white.opacity(0.04))
-                RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+                RoundedRectangle(cornerRadius: 3).fill(.primary.opacity(0.04))
+                RoundedRectangle(cornerRadius: 3).strokeBorder(.primary.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
                 VStack(spacing: 10) {
                     if failed { Image(systemName: "exclamationmark.triangle").font(.title2).foregroundStyle(.orange) }
-                    else { ProgressView().tint(.white) }
+                    else { ProgressView().tint(.primary) }
                     Text(failed ? "만들지 못함" : "책으로 만드는 중").font(.caption.weight(.medium))
                 }
             }
-            .frame(width: coverHeight * book.kind.aspect, height: coverHeight)
-            .padding(.bottom, 22)
+            .frame(width: width, height: coverHeight * 0.94)
+            .frame(height: standHeight, alignment: .bottom)
+            .padding(.bottom, 34)
             Text(((book.source as NSString).lastPathComponent as NSString).deletingPathExtension)
                 .font(.subheadline.weight(.semibold)).lineLimit(2)
-            Text(failed ? (book.error ?? "변환 실패") : "맥에서 변환 중").font(.caption).foregroundStyle(.white.opacity(0.62)).lineLimit(2)
+            Text(failed ? (book.error ?? "변환 실패") : "맥에서 변환 중").font(.caption).foregroundStyle(.primary.opacity(0.62)).lineLimit(2)
         }
-        .frame(width: coverHeight * book.kind.aspect, alignment: .leading)
+        .frame(width: width, alignment: .leading)
     }
 }
 
@@ -526,12 +691,12 @@ private struct ContinueCard: View {
             HStack(alignment: .center, spacing: 28) {
                 BookCover(book: book, server: server, height: 220)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("이어서 쓰기").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.65))
+                    Text("이어서 쓰기").font(.subheadline.weight(.semibold)).foregroundStyle(.primary.opacity(0.65))
                     Text(book.name).font(.system(.largeTitle, design: .serif).weight(.semibold)).lineLimit(2)
-                    Label(details, systemImage: book.kind.symbol).font(.callout).foregroundStyle(.white.opacity(0.72))
+                    Label(details, systemImage: book.kind.symbol).font(.callout).foregroundStyle(.primary.opacity(0.72))
                     Label("펼치기", systemImage: "book").font(.headline)
                         .padding(.horizontal, 22).frame(height: 46)
-                        .background(.white.opacity(0.16), in: Capsule())
+                        .background(.primary.opacity(0.16), in: Capsule())
                         .padding(.top, 10)
                 }
                 Spacer(minLength: 0)
