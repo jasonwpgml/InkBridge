@@ -55,44 +55,101 @@ struct PadView: View {
     var goHome: () -> Void
     @State private var connectionSheet = false
     @State private var clearConfirmation = false
+    @AppStorage("screenBarCollapsed") private var barCollapsed = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                Button(action: goHome) { Label("InkBridge", systemImage: "house").font(.headline) }
-                    .accessibilityLabel("처음 화면으로")
-                Text(model.receiving ? "화면 수신 중" : "전송 대기").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button { connectionSheet = true } label: {
-                    Label(link.connectedName ?? "맥 연결", systemImage: link.connectedName == nil ? "link" : "checkmark.circle")
-                }
-                Button { model.toolsVisible.toggle() } label: {
-                    Image(systemName: model.toolsVisible ? "pencil.tip.crop.circle.fill" : "pencil.tip.crop.circle")
-                        .font(.title3).frame(width: 44, height: 44)
-                }
-                    .accessibilityLabel(model.toolsVisible ? "필기 도구 접기" : "필기 도구 펼치기")
-            }.padding(.horizontal, 20).padding(.vertical, 12).inkGlass(Rectangle())
-            ZStack {
-                CanvasStage(model: model)
-                if model.geometry == nil {
-                    ContentUnavailableView("맥 화면 위에 바로 쓰기", systemImage: "pencil.tip.crop.circle",
-                                           description: Text("맥을 연결한 뒤 Mac 앱에서 화면 전송을 시작하세요."))
-                        .foregroundStyle(.white)
-                }
+        ZStack {
+            CanvasStage(model: model).ignoresSafeArea()
+            if model.geometry == nil {
+                ContentUnavailableView("맥 화면 위에 바로 쓰기", systemImage: "pencil.tip.crop.circle",
+                                       description: Text("맥을 연결한 뒤 Mac 앱에서 화면 전송을 시작하세요.\n필기는 맥을 거치지 않고 iPad에서 바로 그려져 Sidecar보다 펜 지연이 적습니다. 맥 화면 영상은 조금 늦게 따라옵니다."))
+                    .foregroundStyle(.white)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay(alignment: .bottom) {
-                ToolbarDock(model: model, documents: model.documents, clearConfirmation: $clearConfirmation)
-            }
-            Text(model.message).font(.caption).foregroundStyle(.secondary)
-                .lineLimit(2).padding(.horizontal).padding(.vertical, 6)
         }
+        .overlay(alignment: .topLeading) { topBar.padding(.leading, 16).padding(.top, 12) }
+        .overlay(alignment: .bottom) {
+            ToolbarDock(model: model, documents: model.documents, clearConfirmation: $clearConfirmation)
+        }
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
         .pencilPalette(model: model, documents: model.documents, documentMode: false)
         .sheet(isPresented: $connectionSheet) { ConnectionView(link: link) }
         .confirmationDialog("현재 화면의 필기를 모두 지울까요?", isPresented: $clearConfirmation) {
             Button("모두 지우기", role: .destructive) { model.clear() }
         } message: { Text("실행 취소로 복원할 수 있습니다.") }
         .onAppear { if link.connectedName == nil { connectionSheet = true } }
+    }
+
+    /// Floats over the screen; folded it is only the home button, which a long press opens again.
+    @ViewBuilder private var topBar: some View {
+        Group {
+            if barCollapsed { foldedBar } else { openBar }
+        }
+        .transition(.scale(scale: 0.6, anchor: .topLeading).combined(with: .opacity))
+        .padding(.trailing, 16)
+        .sensoryFeedback(.impact(weight: .light), trigger: barCollapsed)
+    }
+
+    private var foldedBar: some View {
+        Image(systemName: "house").font(.system(size: 19, weight: .medium))
+            .frame(width: 48, height: 48)
+            .contentShape(Circle())
+            .inkGlass(Circle())
+            .onTapGesture(perform: goHome)
+            .onLongPressGesture(minimumDuration: 0.4) { setCollapsed(false) }
+            .accessibilityElement()
+            .accessibilityLabel("처음 화면으로")
+            .accessibilityHint("길게 누르면 상단 막대를 펼칩니다.")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { goHome() }
+            .accessibilityAction(named: "상단 막대 펼치기") { setCollapsed(false) }
+    }
+
+    private var openBar: some View {
+        HStack(spacing: 4) {
+            Button(action: goHome) { barIcon("house") }
+                .accessibilityLabel("처음 화면으로")
+            status
+            connectionButton
+            Button { withAnimation(.snappy) { model.toolsVisible.toggle() } } label: {
+                barIcon(model.toolsVisible ? "pencil.tip.crop.circle.fill" : "pencil.tip.crop.circle")
+            }
+            .accessibilityLabel(model.toolsVisible ? "필기 도구 접기" : "필기 도구 펼치기")
+            Button { setCollapsed(true) } label: { barIcon("chevron.up") }
+                .accessibilityLabel("상단 막대 접기")
+                .accessibilityHint("접으면 홈 버튼만 남고, 길게 누르면 다시 펼쳐집니다.")
+        }
+        .padding(4)
+        .buttonStyle(.plain)
+        .inkGlass(Capsule())
+    }
+
+    private var status: some View {
+        HStack(spacing: 8) {
+            Circle().fill(model.receiving ? Color.green : Color.secondary.opacity(0.6)).frame(width: 8, height: 8)
+            Text(model.message).font(.subheadline).lineLimit(1)
+        }
+        .padding(.horizontal, 8)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var connectionButton: some View {
+        Button { connectionSheet = true } label: {
+            Label(link.connectedName ?? "맥 연결", systemImage: link.connectedName == nil ? "link" : "checkmark.circle")
+                .font(.subheadline.weight(.medium)).lineLimit(1)
+                .padding(.horizontal, 14).frame(height: 36)
+                .background(.primary.opacity(0.08), in: Capsule())
+                .contentShape(Capsule())
+        }
+    }
+
+    private func barIcon(_ symbol: String) -> some View {
+        Image(systemName: symbol).font(.system(size: 19, weight: .medium))
+            .frame(width: 44, height: 44).contentShape(Circle())
+    }
+
+    private func setCollapsed(_ collapsed: Bool) {
+        withAnimation(.snappy) { barCollapsed = collapsed }
     }
 }
 
