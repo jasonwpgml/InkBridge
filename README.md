@@ -1,5 +1,8 @@
 # InkBridge
 
+> ⭐ **이 저장소를 참고하셨다면 Star를 꼭 남겨 주세요!** 다음 작업에 큰 힘이 됩니다.
+> If this repo helped you, please leave a star.
+
 **Apple Pencil로 맥 화면과 문서 위에 바로 쓰는 iPad + Mac 필기 도구입니다.**
 
 InkBridge lets you write with Apple Pencil over your Mac's screen and documents. It has three versions that share one iPad app, and everything stays on your local network: no account and no cloud server.
