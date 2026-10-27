@@ -100,7 +100,7 @@ xcodebuild -project InkBridge.xcodeproj -scheme InkBridgePad -destination 'platf
    터미널에 `http://<맥 이름>.local:5173/?t=<토큰>` 형태의 **iPad 권장 주소**가 나옵니다.
 2. iPad에서 InkBridge Pad → **서재**를 누르고 그 주소를 붙여넣습니다. 한 번만 하면 됩니다.
 3. 폴더의 문서가 종류별 책장(PDF·슬라이드·문서·웹 페이지)에 꽂힙니다. PDF·PowerPoint·Keynote·Word·Pages 파일은 맥이 쪽 이미지로 바꾸는 동안 ‘책으로 만드는 중’으로 보이고, 첫 쪽이 표지가 됩니다.
-4. **가져오기**로 iPad의 파일을 맥 폴더의 `imported/`에 넣을 수 있습니다. 맥 폴더에 직접 넣은 파일도 바로 꽂힙니다.
+4. **가져오기**로 iPad의 PDF·PowerPoint·Keynote·Word·Pages 파일을 맥 폴더의 `imported/`에 넣을 수 있습니다. HTML은 스크립트가 서버와 같은 출처에서 실행되므로 가져오기로 받지 않습니다. 믿을 수 있는 HTML만 맥 폴더에 직접 넣어 주세요. 맥 폴더에 넣은 파일도 바로 꽂힙니다.
 5. 책을 누르면 펼쳐지고 Pencil로 씁니다. 필기는 페이지(쪽)별로 맥 폴더의 `.pencil-review/`에 저장됩니다. 필기가 있는 책에는 빨간 책갈피가 붙고, 마지막으로 펼친 책은 위쪽 **이어서 쓰기**에 놓입니다.
 6. 도구 막대의 ⋯ → **서재로**를 누르면 책장으로 돌아옵니다.
 

@@ -56,13 +56,13 @@ Run the server on a copy of `library/examples/` in a temp folder, not on the exa
 - **Legacy names stay.** The library was once "Pencil Review". Keep `.pencil-review/` (data dir), the `pr_token` cookie, `/__pr/` routes, `window.__pencilReview` and the `pencilReview` message handler and IndexedDB name: renaming them loses users' notes. User-visible text says 서재 / InkBridge.
 - **Glass look.** iPad surfaces use `inkGlass(_:)` (toolbars, honors 불투명 모드) or `glassCard(_:)` (home and library cards). iOS 26 `glassEffect`, with a material fallback below.
 - **One toolbar for both writing modes.** `WritingToolbar` / `ToolbarDock` / `PencilPalette` serve screen and library mode; library-only commands go through `DocumentSession.run(_:)` to `library/client/overlay.js`.
-- **Paths from the network are untrusted.** Server paths go through `toRelative` / `resolveInside` (`library/lib/paths.mjs`); hidden segments, traversal and symlinks out of the root are refused. Non-GET requests with a foreign `Origin` get 403 (the cookie alone is not enough), and the manifest only carries the token for a manifest load. The reader web view never navigates its main frame off the server. Add a test when you touch any of this.
+- **Paths from the network are untrusted.** Server paths go through `toRelative` / `resolveInside` (`library/lib/paths.mjs`); hidden segments, traversal and symlinks out of the root are refused. Non-GET requests with a foreign `Origin` get 403 (the cookie alone is not enough), the manifest only carries the token when `Sec-Fetch-Dest: manifest`, and page clear/save routes refuse a missing or odd `page`. The reader web view never navigates its main frame off the server. Add a test when you touch any of this.
 - **Never commit** `.pencil-review/` (it holds the access token and notes), `build/`, generated `converted/`, or `library/bin/`.
 - Bundle ids: `local.inkbridge.stream.pad`, `local.inkbridge.stream.mac`, `local.inkbridge.desktop` (Sidecar). Signing team lives in `project.yml`; override with `DEVELOPMENT_TEAM=` instead of editing it for local builds.
 
 ## Library server API (used by the iPad shelf)
 
-All routes need the token. `GET /__pr/api/pages` → books `{path, title, source, kind: pdf|slides|doc|web, cover, pageCount, strokes, …}`; `GET /__pr/api/conversions` → documents still converting; `POST /__pr/api/import?name=<file>` (raw body, ≤300 MB) → saved under `imported/`; `GET /__pr/api/info` → `{root, importDir}`. Ink, export and live routes are described in `library/README.md` and `library/DESIGN.md`.
+All routes need the token. `GET /__pr/api/pages` → books `{path, title, source, kind: pdf|slides|doc|web, cover, pageCount, strokes, …}`; `GET /__pr/api/conversions` → documents still converting; `POST /__pr/api/import?name=<file>` (raw body, ≤300 MB, PDF/Office only: never accept HTML here, served HTML runs scripts on the API's origin) → saved under `imported/`; `GET /__pr/api/info` → `{root, importDir}`. Ink, export and live routes are described in `library/README.md` and `library/DESIGN.md`.
 
 ## Credit
 

@@ -24,6 +24,8 @@
 		C2516DCE4519EA6203F0BEF8 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73605013578A0F0A14C27CDF /* HomeView.swift */; };
 		DA649FEC29B34FBEDC28DB6E /* PadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F284CDE64E67CC3A8F234C1A /* PadApp.swift */; };
 		EACA0EEDF9CDFDF07C8437C4 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776E9CDF74D433E9D969A585 /* Protocol.swift */; };
+		C1A0F00D1C0B000000000002 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C1A0F00D1C0B000000000001 /* AppIcon.icon */; };
+		C1A0F00D1C0B000000000003 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C1A0F00D1C0B000000000001 /* AppIcon.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,12 +48,14 @@
 		D3DB52AB94336F15F2FFEB40 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D887C301915A6988E14D055E /* PadModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadModel.swift; sourceTree = "<group>"; };
 		F284CDE64E67CC3A8F234C1A /* PadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadApp.swift; sourceTree = "<group>"; };
+		C1A0F00D1C0B000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		1EA07CF5E10423E65502C80E /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				C1A0F00D1C0B000000000001 /* AppIcon.icon */,
 				07AFDE835F249CE6EF50B410 /* PeerLink.swift */,
 				776E9CDF74D433E9D969A585 /* Protocol.swift */,
 			);
@@ -114,6 +118,7 @@
 			buildConfigurationList = EFDE1CDD975CF54CBDD64243 /* Build configuration list for PBXNativeTarget "InkBridgePad" */;
 			buildPhases = (
 				F15EF4A1258AC3209862BAFC /* Sources */,
+				C1A0F00D1C0B000000000005 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -131,6 +136,7 @@
 			buildConfigurationList = D5AC695ABF9BFFC0D0AC7BCE /* Build configuration list for PBXNativeTarget "InkBridgeMac" */;
 			buildPhases = (
 				5A2FAA47F77BA72D26BC276D /* Sources */,
+				C1A0F00D1C0B000000000004 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -181,6 +187,25 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1A0F00D1C0B000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1A0F00D1C0B000000000002 /* AppIcon.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1A0F00D1C0B000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C1A0F00D1C0B000000000003 /* AppIcon.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5A2FAA47F77BA72D26BC276D /* Sources */ = {

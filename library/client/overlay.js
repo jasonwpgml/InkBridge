@@ -6,7 +6,8 @@
   const VERSION = script.dataset.version;
   const MODE = script.dataset.mode; // 'live' or 'snapshot'
   const params = new URLSearchParams(location.search);
-  const FIXED_REVIEW = params.get('review');
+  // Only a well-formed review id; anything else in ?review= could steer the API paths built from it.
+  const FIXED_REVIEW = /^r_[A-Za-z0-9_-]{6,40}$/.test(params.get('review') ?? '') ? params.get('review') : null;
   const EXPORT = params.has('export');
   // The toolbar is for the device that writes; Macs without touch only view unless ?tools is given (e.g. Sidecar).
   const SHOW_TOOLS = params.has('tools') || (navigator.maxTouchPoints > 0 && !(window.parent !== window && params.get('review')));
@@ -211,7 +212,7 @@
         const all = await queueAll();
         if (!all.length) break;
         const batch = all.filter((r) => r.reviewId === all[0].reviewId).slice(0, 100);
-        const res = await fetch(`${API}/reviews/${batch[0].reviewId}/ops`, {
+        const res = await fetch(`${API}/reviews/${encodeURIComponent(batch[0].reviewId)}/ops`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ meta: batch[0].meta, ops: batch.map((r) => r.op) }),
@@ -287,7 +288,7 @@
 
   async function fetchReview(id) {
     try {
-      const res = await fetch(`${API}/reviews/${id}`);
+      const res = await fetch(`${API}/reviews/${encodeURIComponent(id)}`);
       if (res.status === 401) state.authLost = true;
       return res.ok ? await res.json() : null;
     } catch {
@@ -708,7 +709,7 @@
     l.sent += points.length;
     l.inFlight = true;
     l.last = performance.now();
-    fetch(`${API}/reviews/${review.id}/live`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    fetch(`${API}/reviews/${encodeURIComponent(review.id)}/live`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .catch(() => {}) // A lost preview only delays the picture; the stroke itself goes through the queue.
       .finally(() => {
         l.inFlight = false;

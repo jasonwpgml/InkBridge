@@ -225,20 +225,27 @@ describe('server', () => {
     assert.match(await (await get('/index.html')).text(), /hello/);
   });
 
-  test('imports a document into imported/ under a free name and lists it as a book', async () => {
+  test('imports a document into imported/ under a free name; HTML and odd names are refused', async () => {
     const post = (name, body) => fetch(`${base}/__pr/api/import?name=${encodeURIComponent(name)}`, { method: 'POST', headers: { cookie }, body });
-    const first = await (await post('노트.html', '<title>노트</title><body>n</body>')).json();
-    assert.deepEqual(first, { path: 'imported/노트.html', page: 'imported/노트.html' });
-    assert.equal((await post('노트.html', '<body>again</body>').then((r) => r.json())).path, 'imported/노트 (2).html');
-    assert.equal((await post('../x.html', 'x').then((r) => r.json())).path, 'imported/x.html');
-    for (const bad of ['run.sh', '.hidden.html', '']) assert.equal((await post(bad, 'x')).status, 400, bad);
+    const first = await (await post('노트.pdf', minimalPdf())).json();
+    assert.deepEqual(first, { path: 'imported/노트.pdf', page: 'converted/imported/노트.pdf/index.html' });
+    assert.equal((await post('노트.pdf', minimalPdf()).then((r) => r.json())).path, 'imported/노트 (2).pdf');
+    assert.equal((await post('../x.pdf', minimalPdf()).then((r) => r.json())).path, 'imported/x.pdf');
+    for (const bad of ['page.html', 'page.htm', 'run.sh', '.hidden.pdf', '']) assert.equal((await post(bad, 'x')).status, 400, bad);
     assert.equal((await post('empty.pdf', '')).status, 400);
-    assert.equal((await fetch(`${base}/__pr/api/import?name=a.html`, { method: 'POST', body: 'x' })).status, 401);
-    const book = (await (await get('/__pr/api/pages')).json()).find((p) => p.path === 'imported/노트.html');
-    assert.equal(book.kind, 'web');
-    assert.equal(book.cover, null);
-    assert.equal(book.title, '노트');
-    await Promise.all(['노트.html', '노트 (2).html', 'x.html'].map((f) => fs.rm(path.join(root, 'imported', f))));
+    assert.equal((await fetch(`${base}/__pr/api/import?name=a.pdf`, { method: 'POST', body: 'x' })).status, 401);
+    assert.deepEqual((await fs.readdir(path.join(root, 'imported'))).sort(), ['x.pdf', '노트 (2).pdf', '노트.pdf']);
+    await fs.rm(path.join(root, 'imported'), { recursive: true });
+  });
+
+  test('clearing and saving need one real page, never every review', async () => {
+    const post = (p, body) => fetch(`${base}/__pr/api/${p}`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    for (const body of [{}, { page: '' }, { page: 7 }, { page: '../x.html' }, { page: '/index.html' }]) {
+      assert.equal((await post('pages/clear', body)).status, 400, JSON.stringify(body));
+      assert.equal((await post('pages/export', body)).status, 400, JSON.stringify(body));
+    }
+    // What a crafted ?review=../pages/clear used to reach.
+    assert.equal((await post('pages/clear/ops', { meta: {}, ops: [] })).status, 404);
   });
 
   test('refuses changes sent from another site even with the cookie', async () => {
@@ -252,12 +259,13 @@ describe('server', () => {
   });
 
   test('web app manifest starts from the token URL; icons need no token', async () => {
-    const manifest = await (await get('/__pr/manifest.webmanifest')).json();
+    const manifest = await (await get('/__pr/manifest.webmanifest', { cookie, 'sec-fetch-dest': 'manifest' })).json();
     assert.equal(manifest.start_url, `/?t=${s.token}`);
     assert.equal(manifest.display, 'standalone');
     assert.equal((await get('/__pr/manifest.webmanifest', {})).status, 401);
-    const scripted = await (await get('/__pr/manifest.webmanifest', { cookie, 'sec-fetch-dest': 'empty' })).json();
-    assert.equal(scripted.start_url, '/');
+    for (const headers of [{ cookie, 'sec-fetch-dest': 'empty' }, { cookie }]) {
+      assert.equal((await (await get('/__pr/manifest.webmanifest', headers)).json()).start_url, '/');
+    }
     const icon = await get('/__pr/icon-180.png', {});
     assert.equal(icon.status, 200);
     assert.equal(icon.headers.get('content-type'), 'image/png');

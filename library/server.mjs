@@ -20,8 +20,9 @@ const COOKIE = 'pr_token';
 const MAX_BODY = 4 * 1024 * 1024;
 const MAX_IMPORT = 300 * 1024 * 1024;
 // Files the iPad library brings in land here, then convert like any document dropped into the folder.
+// Only documents that become page images: served HTML runs scripts on this origin, so it must come from the Mac user.
 export const IMPORT_DIR = 'imported';
-const IMPORTABLE = new Set(['.html', '.htm', ...CONVERTIBLE]);
+const IMPORTABLE = CONVERTIBLE;
 const RELOAD_EXT = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.json', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.woff', '.woff2', '.ttf', '.otf']);
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.htm': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -71,6 +72,15 @@ function send(res, status, body, type = 'text/plain; charset=utf-8', headers = {
 }
 
 const sendJson = (res, status, value) => send(res, status, JSON.stringify(value), 'application/json; charset=utf-8');
+
+// Clearing and saving act on one document; an empty or odd page must never mean "every review".
+function requirePage(body) {
+  const page = body?.page;
+  if (typeof page !== 'string' || !page || page.length > 1024 || page.startsWith('/') || page.split('/').includes('..')) {
+    throw new ValidationError('page');
+  }
+  return page;
+}
 
 async function readJson(req) {
   const chunks = [];
@@ -345,10 +355,10 @@ export async function startServer({ root, port = 5173, host = '::', cert, key, r
     if (resource === 'conversions' && req.method === 'GET') {
       return sendJson(res, 200, [...conversions].filter(([, c]) => c.status !== 'done').map(([source, c]) => ({ source, ...c })));
     }
-    if (resource === 'pages' && id === 'clear' && req.method === 'POST') {
-      const { page } = await readJson(req);
+    if (resource === 'pages' && id === 'clear' && !action && req.method === 'POST') {
+      const page = requirePage(await readJson(req));
       let strokes = 0;
-      const reviews = store.list({ page: String(page ?? '') });
+      const reviews = store.list({ page });
       for (const { id: rid } of reviews) {
         const ids = store.get(rid).strokes.map((s) => s.id);
         if (!ids.length) continue;
@@ -360,10 +370,12 @@ export async function startServer({ root, port = 5173, host = '::', cert, key, r
       log(`  cleared ${strokes} strokes from ${page}`);
       return sendJson(res, 200, { reviews: reviews.length, strokes });
     }
-    if (resource === 'pages' && id === 'export' && req.method === 'POST') {
+    if (resource === 'pages' && id === 'export' && !action && req.method === 'POST') {
       // Saved copies go to .pencil-review/saved/<document>/<time>[-page]/, one folder per review.
-      const { page, review, state } = await readJson(req);
-      const reviews = (review ? [store.get(String(review))].filter(Boolean) : store.list({ page: String(page ?? '') }).map((r) => store.get(r.id)))
+      const body = await readJson(req);
+      const page = requirePage(body);
+      const { review, state } = body;
+      const reviews = (review ? [store.get(String(review))].filter(Boolean) : store.list({ page }).map((r) => store.get(r.id)))
         .filter((r) => r.page === page);
       const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const folder = path.join(dataDir, 'saved', String(page).replace(/[\/]/g, '_'), state !== undefined ? `${stamp}-page` : stamp);
@@ -447,11 +459,11 @@ export async function startServer({ root, port = 5173, host = '::', cert, key, r
     if (parts[2] === 'snap') return serveSnapshot(res, parts[3] ?? '', parts.slice(4).join('/'));
     if (parts[2] === 'manifest.webmanifest' && parts.length === 3) {
       // A home-screen web app keeps its own cookies apart from Safari, so it starts from the token URL once.
-      // Scripts in served pages could fetch() the manifest; only a manifest load (or a browser that does not say) gets the token.
+      // Scripts in served pages could fetch() the manifest; only the browser's own manifest load gets the token.
       const dest = req.headers['sec-fetch-dest'];
       const manifest = {
         name: 'InkBridge 서재', short_name: '서재', lang: 'ko',
-        start_url: dest === undefined || dest === 'manifest' ? `/?t=${token}` : '/', scope: '/', display: 'standalone',
+        start_url: dest === 'manifest' ? `/?t=${token}` : '/', scope: '/', display: 'standalone',
         background_color: '#f2f2f7', theme_color: '#0a63d6',
         icons: [192, 512].map((n) => ({ src: `/__pr/icon-${n}.png`, sizes: `${n}x${n}`, type: 'image/png' })),
       };

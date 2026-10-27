@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 // 서재 (library): the Mac server's documents as books on glass shelves. Opening one hands it to the reader
-// (ReviewWebView); importing uploads files from the iPad into the Mac folder's imported/.
+// (ReviewWebView); importing uploads PDF and Office files from the iPad into the Mac folder's imported/.
 
 /// One document on the shelf, as GET /__pr/api/pages lists it.
 struct Book: Decodable, Identifiable, Hashable {
@@ -295,7 +295,7 @@ struct LibraryView: View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: "books.vertical").font(.system(size: 44, weight: .light))
             Text("서재가 비어 있습니다").font(.title2.bold())
-            Text("iPad의 PDF·PowerPoint·Word·HTML 파일을 가져오거나, 맥 폴더\(client.root.isEmpty ? "" : "(\(client.root))")에 문서를 넣으면 책장에 꽂힙니다.")
+            Text("iPad의 PDF·PowerPoint·Word 파일을 가져오거나, 맥 폴더\(client.root.isEmpty ? "" : "(\(client.root))")에 문서를 넣으면 책장에 꽂힙니다.")
                 .foregroundStyle(.white.opacity(0.75))
             Button { importing = true } label: {
                 Label("문서 가져오기", systemImage: "plus").font(.headline).padding(.horizontal, 22).frame(height: 48)
@@ -344,7 +344,8 @@ struct LibraryView: View {
         }
     }
 
-    static let importable: [UTType] = [.pdf, .html, .rtf]
+    /// Documents the server turns into page images; HTML is not imported because its scripts would run beside the API.
+    static let importable: [UTType] = [.pdf, .rtf]
         + ["pptx", "ppt", "key", "docx", "doc", "odt", "pages"].compactMap { UTType(filenameExtension: $0) }
 }
 
