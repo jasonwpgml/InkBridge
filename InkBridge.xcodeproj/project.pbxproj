@@ -14,6 +14,7 @@
 		4CEE2FCB3980DC4888CDA8BF /* InkGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 246B51AEA198D146C44C9776 /* InkGlass.swift */; };
 		4F655D95FA9B66E098C3F34E /* WebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DEF2D8CA483C56B4B9CED19 /* WebViewController.swift */; };
 		5F3865FB07CB8983FEC6244F /* ScreenStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA30D0435054D0808A088B88 /* ScreenStreamer.swift */; };
+		5FB6AFD51B99F1E03DCEAF56 /* LibraryAisle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06699D2A3B3F291E7F1D9F4E /* LibraryAisle.swift */; };
 		62ABE1E48B67C9D9FCBA8AB8 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = ED6A199510879041E0359192 /* AppIcon.icon */; };
 		675A465024830C4F5E3C6A68 /* InkOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79883BC0343D2C74557AED5 /* InkOverlay.swift */; };
 		67DF52F9A5ABE91AB40A8A43 /* CanvasStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A94DF822989394729E191B /* CanvasStage.swift */; };
@@ -29,6 +30,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		06699D2A3B3F291E7F1D9F4E /* LibraryAisle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAisle.swift; sourceTree = "<group>"; };
 		07AFDE835F249CE6EF50B410 /* PeerLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerLink.swift; sourceTree = "<group>"; };
 		0E90A829D58D4C663B43C5D3 /* InkBridgeMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InkBridgeMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		246B51AEA198D146C44C9776 /* InkGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkGlass.swift; sourceTree = "<group>"; };
@@ -89,6 +91,7 @@
 				73605013578A0F0A14C27CDF /* HomeView.swift */,
 				4A773FF6AAF9A718141ACB30 /* Info.plist */,
 				246B51AEA198D146C44C9776 /* InkGlass.swift */,
+				06699D2A3B3F291E7F1D9F4E /* LibraryAisle.swift */,
 				7EB08A34140B5460FFEC11B6 /* LibraryView.swift */,
 				F284CDE64E67CC3A8F234C1A /* PadApp.swift */,
 				D887C301915A6988E14D055E /* PadModel.swift */,
@@ -228,6 +231,7 @@
 				0FBE5EFA87F4698C33CB322C /* DocumentViews.swift in Sources */,
 				C2516DCE4519EA6203F0BEF8 /* HomeView.swift in Sources */,
 				4CEE2FCB3980DC4888CDA8BF /* InkGlass.swift in Sources */,
+				5FB6AFD51B99F1E03DCEAF56 /* LibraryAisle.swift in Sources */,
 				7F1E7F46C32CAFBBBA89ED20 /* LibraryView.swift in Sources */,
 				DA649FEC29B34FBEDC28DB6E /* PadApp.swift in Sources */,
 				35FCD7FB37A27AAB77487DE4 /* PadModel.swift in Sources */,

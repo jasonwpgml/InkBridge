@@ -77,32 +77,113 @@ final class DocumentSession: ObservableObject {
 struct DocumentModeView: View {
     @ObservedObject var model: PadModel
     @ObservedObject var documents: DocumentSession
+    /// An address given at launch (-serverURL) or saved before there were bookcases; it becomes a bookcase.
     @Binding var serverURL: String
     /// Returns to the home screen.
     var leave: () -> Void
+    @AppStorage(Bookcases.key) private var stored = ""
+    @State private var opened: Bookcase?
     @State private var book: Book?
     @State private var clearConfirmation = false
+    @State private var editing: BookcaseEdit?
+
+    private var bookcases: [Bookcase] { Bookcases.decode(stored) }
 
     var body: some View {
-        if let server = LibraryServer(serverURL) {
-            ZStack {
-                LibraryView(server: server, open: { opened in withAnimation(.smooth(duration: 0.3)) { book = opened } },
-                            changeServer: { serverURL = "" }, leave: leave)
-                if let book {
-                    reader(server.pageURL(book))
-                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        ZStack {
+            LibraryAisle(bookcases: bookcases, opened: opened, open: openBookcase, add: { editing = .add },
+                         changeAddress: { editing = .address($0.id) }, rename: rename, remove: remove, leave: leave)
+            if let opened, let server = LibraryServer(opened.address) {
+                ZStack {
+                    LibraryView(server: server, title: opened.title,
+                                open: { picked in withAnimation(.smooth(duration: 0.3)) { book = picked } },
+                                changeServer: { editing = .address(opened.id) },
+                                leave: { withAnimation(.smooth(duration: 0.35)) { self.opened = nil } })
+                    if let book {
+                        reader(server.pageURL(book))
+                            .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    }
                 }
+                .id("\(opened.id)|\(opened.address)")
+                .transition(.opacity.combined(with: .scale(scale: 1.04)))
             }
-            .id(serverURL)
-        } else {
-            SetupView(onSave: { serverURL = $0.absoluteString }, onLeave: leave)
+        }
+        .sheet(item: $editing) { edit in
+            SetupView(title: edit.title, onSave: { save(edit, $0) }, onLeave: { editing = nil }, leaveTitle: "취소")
+        }
+        .onAppear(perform: adoptServerURL)
+        .task { await refreshNames() }
+    }
+
+    private func openBookcase(_ bookcase: Bookcase) {
+        guard LibraryServer(bookcase.address) != nil else {
+            editing = .address(bookcase.id)
+            return
+        }
+        withAnimation(.smooth(duration: 0.35)) { opened = bookcase }
+    }
+
+    private func update(_ change: (inout [Bookcase]) -> Void) {
+        var list = bookcases
+        change(&list)
+        stored = Bookcases.encode(list)
+        if let id = opened?.id { opened = list.first { $0.id == id } }
+    }
+
+    private func save(_ edit: BookcaseEdit, _ url: URL) {
+        let address = url.absoluteString
+        switch edit {
+        case .add:
+            let added = Bookcase(address: address)
+            update { $0.append(added) }
+            Task { await refreshName(added.id) }
+        case .address(let id):
+            update { list in
+                if let i = list.firstIndex(where: { $0.id == id }) { list[i].address = address }
+            }
+            Task { await refreshName(id) }
+        }
+        editing = nil
+    }
+
+    private func rename(_ bookcase: Bookcase, _ name: String?) {
+        update { list in
+            if let i = list.firstIndex(where: { $0.id == bookcase.id }) { list[i].custom = name?.isEmpty == false ? name : nil }
+        }
+    }
+
+    private func remove(_ bookcase: Bookcase) {
+        update { $0.removeAll { $0.id == bookcase.id } }
+    }
+
+    private func adoptServerURL() {
+        guard !serverURL.isEmpty else { return }
+        if !bookcases.contains(where: { $0.address == serverURL }) {
+            let address = serverURL
+            update { $0.append(Bookcase(address: address)) }
+        }
+        serverURL = ""
+    }
+
+    /// Picks up each Mac's current name for the side of its bookcase.
+    private func refreshNames() async {
+        await withTaskGroup(of: Void.self) { group in
+            for bookcase in bookcases { group.addTask { await refreshName(bookcase.id) } }
+        }
+    }
+
+    private func refreshName(_ id: UUID) async {
+        guard let address = bookcases.first(where: { $0.id == id })?.address,
+              let name = await Bookcases.deviceName(address) else { return }
+        update { list in
+            if let i = list.firstIndex(where: { $0.id == id }), list[i].deviceName != name { list[i].deviceName = name }
         }
     }
 
     private func reader(_ url: URL) -> some View {
         let close = { withAnimation(.smooth(duration: 0.3)) { book = nil } }
         return ReviewWebView(startURL: url, session: documents, onPencil: model.handlePencil,
-                             onChangeServer: { serverURL = "" }, onLeave: close)
+                             onChangeServer: { if let opened { editing = .address(opened.id) } }, onLeave: close)
             .ignoresSafeArea()
             .overlay(alignment: .bottom) {
                 ToolbarDock(model: model, documents: documents, documentMode: true, leave: close,
@@ -116,16 +197,38 @@ struct DocumentModeView: View {
     }
 }
 
+/// Adding a bookcase, or changing the server address of one.
+enum BookcaseEdit: Identifiable {
+    case add
+    case address(UUID)
+
+    var id: String {
+        switch self {
+        case .add: "add"
+        case .address(let id): id.uuidString
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .add: "책장 추가"
+        case .address: "서버 주소 바꾸기"
+        }
+    }
+}
+
 struct SetupView: View {
+    var title = "서재"
     var onSave: (URL) -> Void
     var onLeave: (() -> Void)?
+    var leaveTitle = "처음 화면으로"
     @State private var text = ""
     @State private var error: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("서재").font(.largeTitle.bold())
+                Text(title).font(.largeTitle.bold())
                 Spacer()
                 ConnectionHelpButton()
             }
@@ -145,7 +248,7 @@ struct SetupView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(text.isEmpty)
                 if let onLeave {
-                    Button("처음 화면으로", action: onLeave)
+                    Button(leaveTitle, action: onLeave)
                 }
             }
             if let error {
@@ -225,7 +328,7 @@ struct ConnectionHelpView: View {
                         Button("복사") { UIPasteboard.general.string = command }
                     }
                     step(3, "터미널에 나온 ‘iPad 권장 주소’(http://맥이름.local:5173/?t=…)를 복사합니다. 같은 Apple 계정이면 맥에서 복사한 것을 iPad에서 바로 붙여넣을 수 있습니다.")
-                    step(4, "서재의 ‘서버 주소 바꾸기’에서 주소를 붙여넣고 ‘연결’을 누릅니다. 주소는 앱이 기억합니다.")
+                    step(4, "서재에서 ‘책장 추가’를 눌러 주소를 붙여넣고 ‘연결’을 누릅니다. 맥마다 책장이 하나씩 서고, 주소는 앱이 기억합니다.")
                 }
                 Section("연결이 안 될 때") {
                     check("터미널 창이 열려 있고 서버가 켜져 있는지", "창을 닫거나 맥이 잠자기에 들어가면 서버도 멈춥니다.")

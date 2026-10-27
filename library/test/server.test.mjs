@@ -225,6 +225,13 @@ describe('server', () => {
     assert.match(await (await get('/index.html')).text(), /hello/);
   });
 
+  test('info names the Mac for its bookcase on the iPad', async () => {
+    const info = await (await get('/__pr/api/info')).json();
+    assert.equal(info.root, root);
+    assert.equal(typeof info.name, 'string');
+    assert.ok(info.name.length > 0);
+  });
+
   test('imports a document into imported/ under a free name; HTML and odd names are refused', async () => {
     const post = (name, body) => fetch(`${base}/__pr/api/import?name=${encodeURIComponent(name)}`, { method: 'POST', headers: { cookie }, body });
     const first = await (await post('노트.pdf', minimalPdf())).json();

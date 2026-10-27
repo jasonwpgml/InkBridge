@@ -39,7 +39,7 @@ xcodebuild -project InkBridge.xcodeproj -scheme InkBridgePad -destination 'platf
 InkBridge Pad takes launch arguments, so a screen can be opened and captured headlessly:
 
 - `-padMode home|screen|library` opens that mode directly.
-- `-serverURL "http://localhost:<port>/?t=<token>"` sets the library server (kept for later launches). The token is in `<folder>/.pencil-review/token`.
+- `-serverURL "http://localhost:<port>/?t=<token>"` adds that library server as a bookcase in the library aisle (kept for later launches; an address already saved is not added twice). The token is in `<folder>/.pencil-review/token`.
 - `-appearance light|dark|system` overrides 설정 → 화면 모드 for that launch.
 
 ```sh

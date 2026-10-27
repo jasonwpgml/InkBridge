@@ -172,6 +172,8 @@ private enum ReadingHistory {
 
 struct LibraryView: View {
     @StateObject private var client: LibraryClient
+    /// The bookcase's name, from its Mac.
+    let title: String
     var open: (Book) -> Void
     var changeServer: () -> Void
     var leave: () -> Void
@@ -180,8 +182,9 @@ struct LibraryView: View {
     @State private var settings = false
     @AppStorage(ReadingHistory.key) private var recentStored = ""
 
-    init(server: LibraryServer, open: @escaping (Book) -> Void, changeServer: @escaping () -> Void, leave: @escaping () -> Void) {
+    init(server: LibraryServer, title: String, open: @escaping (Book) -> Void, changeServer: @escaping () -> Void, leave: @escaping () -> Void) {
         _client = StateObject(wrappedValue: LibraryClient(server: server))
+        self.title = title
         self.open = open
         self.changeServer = changeServer
         self.leave = leave
@@ -251,10 +254,10 @@ struct LibraryView: View {
 
     private var header: some View {
         HStack(spacing: 14) {
-            Button(action: leave) { Image(systemName: "house").font(.title3).frame(width: 48, height: 48) }
+            Button(action: leave) { Image(systemName: "chevron.left").font(.title3.weight(.semibold)).frame(width: 48, height: 48) }
                 .glassCard(Circle())
-                .accessibilityLabel("처음 화면으로")
-            Text("서재").font(.largeTitle.bold())
+                .accessibilityLabel("책장 사이로")
+            Text(title).font(.largeTitle.bold()).lineLimit(1).minimumScaleFactor(0.6)
             if client.uploads > 0 {
                 ProgressView().tint(.primary)
                 Text("가져오는 중").font(.subheadline).foregroundStyle(.primary.opacity(0.75))

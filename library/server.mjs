@@ -222,6 +222,15 @@ export function localAddresses(port, scheme = 'http') {
   return { primary, others, local: `${scheme}://localhost:${port}` };
 }
 
+// The Mac's own name (System Settings → General → About), shown on its bookcase in the iPad library.
+function computerName() {
+  try {
+    return execFileSync('scutil', ['--get', 'ComputerName'], { encoding: 'utf8', timeout: 2000 }).trim() || os.hostname();
+  } catch {
+    return os.hostname();
+  }
+}
+
 export async function startServer({ root, port = 5173, host = '::', cert, key, renewToken = false, quiet = false } = {}) {
   const rootReal = await fs.realpath(path.resolve(root));
   const dataDir = path.join(rootReal, DATA_DIR_NAME);
@@ -230,6 +239,7 @@ export async function startServer({ root, port = 5173, host = '::', cert, key, r
   const store = new ReviewStore(dataDir);
   await store.init();
   const bootId = crypto.randomBytes(6).toString('hex');
+  const name = computerName();
   let lastPresence = null;
   // Conversions run one at a time; the home screen shows what is pending or failed.
   const conversions = new Map(); // source rel → { status: 'waiting' | 'converting' | 'done' | 'failed', error?, output? }
@@ -347,7 +357,7 @@ export async function startServer({ root, port = 5173, host = '::', cert, key, r
       }
     }
     if (resource === 'pages' && req.method === 'GET' && !id) return sendJson(res, 200, await listPages(rootReal, store));
-    if (resource === 'info' && req.method === 'GET') return sendJson(res, 200, { root: rootReal, importDir: IMPORT_DIR });
+    if (resource === 'info' && req.method === 'GET') return sendJson(res, 200, { root: rootReal, importDir: IMPORT_DIR, name });
     if (resource === 'import' && req.method === 'POST') {
       const saved = await importFile(rootReal, dataDir, url.searchParams.get('name') ?? '', req);
       log(`  imported ${saved}`);
