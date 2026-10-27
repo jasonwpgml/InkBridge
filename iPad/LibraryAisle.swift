@@ -30,16 +30,23 @@ enum Bookcases {
         (try? JSONEncoder().encode(list)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
     }
 
-    /// The Mac's own name, or nil when its server cannot be reached.
-    static func deviceName(_ address: String) async -> String? {
+    /// What the Mac's server says about itself (`GET /__pr/api/info`); older servers send no name.
+    struct Info: Decodable { var name: String? }
+
+    /// nil when the server cannot be reached.
+    static func probe(_ address: String) async -> Info? {
         guard let server = LibraryServer(address) else { return nil }
         var request = server.request("__pr/api/info")
         request.timeoutInterval = 4
         guard let (data, response) = try? await URLSession.shared.data(for: request),
-              (response as? HTTPURLResponse)?.statusCode == 200,
-              let info = try? JSONDecoder().decode([String: String].self, from: data) else { return nil }
-        return info["name"]
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        return try? JSONDecoder().decode(Info.self, from: data)
     }
+}
+
+/// Whether a bookcase's Mac answered the last time the aisle asked.
+enum BookcaseReach {
+    case checking, online, offline
 }
 
 private enum AisleItem: Hashable {
@@ -51,6 +58,7 @@ private enum AisleItem: Hashable {
 
 struct LibraryAisle: View {
     let bookcases: [Bookcase]
+    let reach: [UUID: BookcaseReach]
     /// The bookcase whose shelves are open; nil while walking the aisle.
     let opened: Bookcase?
     var open: (Bookcase) -> Void
@@ -139,7 +147,7 @@ struct LibraryAisle: View {
             LazyHStack(spacing: 14) {
                 ForEach(0..<(count * Self.laps), id: \.self) { index in
                     let item = items[index % count]
-                    BookcaseEnd(item: item, approaching: approaching == index)
+                    BookcaseEnd(item: item, reach: reach(of: item), approaching: approaching == index)
                         .zIndex(approaching == index ? 1 : 0)
                         .opacity(approaching == nil || approaching == index ? 1 : 0)
                         .contentShape(Rectangle())
@@ -158,6 +166,11 @@ struct LibraryAisle: View {
         .scrollDisabled(approaching != nil)
         .onAppear { if position == nil { position = count * Self.laps / 2 } }
         .onChange(of: count) { _, now in position = now * Self.laps / 2 }
+    }
+
+    private func reach(of item: AisleItem) -> BookcaseReach? {
+        guard case .mac(let bookcase) = item else { return nil }
+        return reach[bookcase.id] ?? .checking
     }
 
     @ViewBuilder private func menu(for item: AisleItem) -> some View {
@@ -204,6 +217,8 @@ private let walnutDark = Color(red: 0.17, green: 0.1, blue: 0.06)
 /// card, and the front full of books running away from you. While approaching, the front turns to face you.
 private struct BookcaseEnd: View {
     let item: AisleItem
+    /// nil for the add and cloud bookcases.
+    let reach: BookcaseReach?
     let approaching: Bool
     @Environment(\.colorScheme) private var scheme
 
@@ -228,7 +243,7 @@ private struct BookcaseEnd: View {
 
     private var label: String {
         switch item {
-        case .mac(let bookcase): "\(bookcase.title) 책장"
+        case .mac(let bookcase): "\(bookcase.title) 책장, \(reach?.label ?? "")"
         case .add: "책장 추가"
         case .cloud: "공용 클라우드 서재, 준비 중"
         }
@@ -237,7 +252,12 @@ private struct BookcaseEnd: View {
     @ViewBuilder private var end: some View {
         switch item {
         case .mac(let bookcase):
-            EndPanel { RangeCard(caption: "MAC", title: bookcase.title) }
+            EndPanel {
+                VStack(spacing: 10) {
+                    RangeCard(caption: "MAC", title: bookcase.title)
+                    if let reach { ReachBadge(reach: reach) }
+                }
+            }
         case .add:
             RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(.primary.opacity(0.45), style: StrokeStyle(lineWidth: 2, dash: [7, 5]))
@@ -252,7 +272,10 @@ private struct BookcaseEnd: View {
     @ViewBuilder private var front: some View {
         switch item {
         case .mac(let bookcase):
+            // The lights are off over the shelves of a Mac that does not answer.
             Stack(seed: bookcase.seed, header: bookcase.title)
+                .overlay { Color.black.opacity(reach == .offline ? 0.5 : 0) }
+                .animation(.smooth, value: reach)
         case .add:
             RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(.primary.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [7, 5]))
@@ -269,6 +292,35 @@ private struct BookcaseEnd: View {
                 .overlay { DustSheet(seed: 7, folds: 7) }
                 .overlay { LinearGradient(colors: [.clear, .black.opacity(0.35)], startPoint: .leading, endPoint: .trailing) }
         }
+    }
+}
+
+extension BookcaseReach {
+    var label: String {
+        switch self {
+        case .checking: "연결 확인 중"
+        case .online: "연결됨"
+        case .offline: "연결 안 됨"
+        }
+    }
+}
+
+/// A small plate under the range card: whether the Mac's server answers.
+private struct ReachBadge: View {
+    let reach: BookcaseReach
+
+    var body: some View {
+        HStack(spacing: 5) {
+            switch reach {
+            case .checking: ProgressView().controlSize(.mini).tint(.white)
+            case .online: Circle().fill(Color(red: 0.45, green: 0.85, blue: 0.5)).frame(width: 7, height: 7)
+            case .offline: Image(systemName: "wifi.slash").font(.system(size: 9, weight: .bold))
+            }
+            Text(reach.label).font(.system(size: 10, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .foregroundStyle(reach == .offline ? Color(red: 1, green: 0.78, blue: 0.7) : .white.opacity(0.85))
+        .padding(.horizontal, 7).padding(.vertical, 4)
+        .background(.black.opacity(0.35), in: Capsule())
     }
 }
 

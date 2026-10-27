@@ -86,12 +86,13 @@ struct DocumentModeView: View {
     @State private var book: Book?
     @State private var clearConfirmation = false
     @State private var editing: BookcaseEdit?
+    @State private var reach: [UUID: BookcaseReach] = [:]
 
     private var bookcases: [Bookcase] { Bookcases.decode(stored) }
 
     var body: some View {
         ZStack {
-            LibraryAisle(bookcases: bookcases, opened: opened, open: openBookcase, add: { editing = .add },
+            LibraryAisle(bookcases: bookcases, reach: reach, opened: opened, open: openBookcase, add: { editing = .add },
                          changeAddress: { editing = .address($0.id) }, rename: rename, remove: remove, leave: leave)
             if let opened, let server = LibraryServer(opened.address) {
                 ZStack {
@@ -112,7 +113,13 @@ struct DocumentModeView: View {
             SetupView(title: edit.title, onSave: { save(edit, $0) }, onLeave: { editing = nil }, leaveTitle: "취소")
         }
         .onAppear(perform: adoptServerURL)
-        .task { await refreshNames() }
+        .task {
+            // Keeps each bookcase's connection state current while the library is open.
+            while !Task.isCancelled {
+                await checkAll()
+                try? await Task.sleep(for: .seconds(20))
+            }
+        }
     }
 
     private func openBookcase(_ bookcase: Bookcase) {
@@ -136,12 +143,13 @@ struct DocumentModeView: View {
         case .add:
             let added = Bookcase(address: address)
             update { $0.append(added) }
-            Task { await refreshName(added.id) }
+            Task { await check(added.id) }
         case .address(let id):
             update { list in
                 if let i = list.firstIndex(where: { $0.id == id }) { list[i].address = address }
             }
-            Task { await refreshName(id) }
+            reach[id] = .checking
+            Task { await check(id) }
         }
         editing = nil
     }
@@ -165,16 +173,20 @@ struct DocumentModeView: View {
         serverURL = ""
     }
 
-    /// Picks up each Mac's current name for the side of its bookcase.
-    private func refreshNames() async {
+    private func checkAll() async {
         await withTaskGroup(of: Void.self) { group in
-            for bookcase in bookcases { group.addTask { await refreshName(bookcase.id) } }
+            for bookcase in bookcases { group.addTask { await check(bookcase.id) } }
         }
     }
 
-    private func refreshName(_ id: UUID) async {
-        guard let address = bookcases.first(where: { $0.id == id })?.address,
-              let name = await Bookcases.deviceName(address) else { return }
+    /// Asks a bookcase's Mac whether it is there, and picks up its current name for the end of the bookcase.
+    private func check(_ id: UUID) async {
+        guard let address = bookcases.first(where: { $0.id == id })?.address else { return }
+        let info = await Bookcases.probe(address)
+        // The address may have changed while asking.
+        guard bookcases.first(where: { $0.id == id })?.address == address else { return }
+        reach[id] = info == nil ? .offline : .online
+        guard let name = info?.name else { return }
         update { list in
             if let i = list.firstIndex(where: { $0.id == id }), list[i].deviceName != name { list[i].deviceName = name }
         }
