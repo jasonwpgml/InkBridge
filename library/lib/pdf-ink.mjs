@@ -40,7 +40,7 @@ async function pngSize(file) {
 }
 
 // The PDF the converted pages were rendered from, or null for documents that are not paged.
-export function sourcePdf(rootReal, page) {
+function sourcePdf(rootReal, page) {
   const source = String(page).match(new RegExp(`^${OUTPUT_DIR}/(.+)/index\\.html$`))?.[1];
   if (!source) return null;
   return path.extname(source).toLowerCase() === '.pdf'

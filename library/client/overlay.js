@@ -5,6 +5,8 @@
   const PAGE = script.dataset.page;
   const VERSION = script.dataset.version;
   const MODE = script.dataset.mode; // 'live' or 'snapshot'
+  // Converted PDFs, slides and Word files can be written back out as a PDF with the ink on it.
+  const PAGED = /^converted\/.+\/index\.html$/.test(PAGE ?? '');
   const params = new URLSearchParams(location.search);
   // Only a well-formed review id; anything else in ?review= could steer the API paths built from it.
   const FIXED_REVIEW = /^r_[A-Za-z0-9_-]{6,40}$/.test(params.get('review') ?? '') ? params.get('review') : null;
@@ -914,6 +916,34 @@
     }
   }
 
+  async function exportPdf() {
+    await flush();
+    toast('필기를 넣은 PDF를 만드는 중입니다');
+    try {
+      const res = await fetch(`${API}/pages/pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: PAGE }) });
+      if (!res.ok) return toast(`PDF를 만들지 못했습니다: ${(await res.json()).error}`);
+      const name = decodeURIComponent((res.headers.get('Content-Disposition') ?? '').split("''")[1] ?? '필기.pdf');
+      const blob = await res.blob();
+      const saved = decodeURIComponent(res.headers.get('X-Saved') ?? '');
+      if (NATIVE) {
+        // The app shows the share sheet; message bodies cannot carry a Blob, so the PDF travels as base64.
+        const data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(',')[1]);
+          reader.readAsDataURL(blob);
+        });
+        NATIVE.postMessage({ type: 'pdf', name, data });
+      } else {
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name });
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      }
+      toast(`${res.headers.get('X-Strokes')}획을 넣은 PDF를 만들었습니다 · 맥 사본 ${saved}`);
+    } catch {
+      toast('맥 서버에 연결할 수 없어 PDF를 만들지 못했습니다');
+    }
+  }
+
   // ---------- reload hold ----------
 
   function tryReload() {
@@ -1147,7 +1177,8 @@
           state.mouseDraw = !state.mouseDraw;
           document.documentElement.style.cursor = state.mouseDraw ? 'crosshair' : '';
         })),
-      menuGroup('저장', menuItem('savePage', '이 페이지 필기 저장', () => saveNotes('page')), menuItem('saveDoc', '이 문서 필기 전체 저장', () => saveNotes('document'))),
+      menuGroup('저장', menuItem('savePage', '이 페이지 필기 저장', () => saveNotes('page')), menuItem('saveDoc', '이 문서 필기 전체 저장', () => saveNotes('document')),
+        ...(PAGED ? [menuItem('savePdf', 'PDF로 내보내기 (필기 포함)', exportPdf)] : [])),
       menuGroup('지우기', menuItem('clearPage', '이 페이지 필기 지우기', clearPage), menuItem('clearDoc', '이 문서 필기 전부 지우기', clearDocument)));
     buttons.clearPage.classList.add('__pr-danger');
     buttons.clearDoc.classList.add('__pr-danger');
@@ -1374,7 +1405,7 @@
     if (buttons.more) buttons.more.dataset.badge = warn ? 'warn' : state.pending ? 'pending' : '';
     NATIVE?.postMessage({
       type: 'state', status: status.textContent, warn, pending: state.pending, hidden: state.hidden,
-      canUndo: state.undo.length > 0, canRedo: state.redo.length > 0, page: pageState(), strokes: shown,
+      canUndo: state.undo.length > 0, canRedo: state.redo.length > 0, page: pageState(), strokes: shown, pdf: PAGED,
     });
   }
 
@@ -1385,11 +1416,13 @@
     if (['pen', 'highlighter', 'eraser'].includes(tool)) state.tool = tool;
     state.native = { color, width: Number(width), kind, finger: !!finger };
   };
+  state.toast = toast; // for messages from the app
   state.command = (name) => {
     const commands = {
       undo, redo, clearPage, clearDocument,
       savePage: () => saveNotes('page'),
       saveDocument: () => saveNotes('document'),
+      exportPdf,
       toggleHidden: () => {
         state.hidden = !state.hidden;
         redraw();

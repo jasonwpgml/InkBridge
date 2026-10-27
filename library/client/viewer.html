@@ -130,10 +130,11 @@
   for (const [v, label] of [['fit', '창에 맞춤'], ['1', '100%']]) scaleSel.append(el('option', { value: v, textContent: label }));
   const exportBtn = el('button', { type: 'button', textContent: '내보내기' });
   const exportOut = el('span', { className: 'muted' });
+  const pdfBtn = el('button', { type: 'button', textContent: 'PDF로 내보내기', hidden: !/^converted\/.+\/index\.html$/.test(review.page) });
   const followLink = follow
     ? el('a', { href: `?review=${encodeURIComponent(id)}`, textContent: '따라가기 끄기' })
     : el('a', { href: followUrl(id), textContent: '따라가기' });
-  head.append(el('a', { href: '?', textContent: '목록' }), followLink, el('strong', { textContent: review.page }), info, scaleSel, exportBtn, exportOut);
+  head.append(el('a', { href: '?', textContent: '목록' }), followLink, el('strong', { textContent: review.page }), info, scaleSel, exportBtn, pdfBtn, exportOut);
   info.textContent = `${width}×${height} · 버전 ${review.contentVersion.slice(0, 8)} · ${review.strokes.length}획 · ${review.device.slice(0, 50)}`;
 
   const stage = el('div', { id: 'stage' });
@@ -248,6 +249,20 @@
     const r = await fetch(`/__pr/api/reviews/${encodeURIComponent(id)}/export`, { method: 'POST' });
     const out = await r.json();
     exportOut.textContent = r.ok ? `${out.dir} (${out.files.join(', ')})` : `실패: ${out.error}`;
+  });
+
+  // The whole document (every page and screen size of this version) as the original PDF with the ink drawn on.
+  pdfBtn.addEventListener('click', async () => {
+    exportOut.textContent = 'PDF 만드는 중…';
+    const r = await fetch('/__pr/api/pages/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: review.page }) });
+    if (!r.ok) {
+      exportOut.textContent = `실패: ${(await r.json()).error}`;
+      return;
+    }
+    const a = el('a', { href: URL.createObjectURL(await r.blob()), download: decodeURIComponent(r.headers.get('Content-Disposition').split("''")[1]) });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    exportOut.textContent = `${r.headers.get('X-Strokes')}획 · ${decodeURIComponent(r.headers.get('X-Saved'))}`;
   });
 })();
 </script>

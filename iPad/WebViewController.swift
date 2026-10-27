@@ -194,6 +194,15 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
         view.bringSubviewToFront(errorView)
     }
 
+    func share(_ file: URL) {
+        let sheet = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.maxY - 80, width: 0, height: 0)
+        }
+        present(sheet, animated: true)
+    }
+
     @objc private func showMenu(_ gesture: UILongPressGestureRecognizer) {
         guard gesture.state == .began else { return }
         let sheet = UIAlertController(title: "서재", message: nil, preferredStyle: .actionSheet)

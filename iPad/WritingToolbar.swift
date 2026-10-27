@@ -200,6 +200,9 @@ struct WritingToolbar: View {
         Section("저장") {
             Button("이 페이지 필기 저장") { documents.run("savePage") }
             Button("이 문서 필기 전체 저장") { documents.run("saveDocument") }
+            if documents.canExportPdf {
+                Button { documents.run("exportPdf") } label: { Label("PDF로 내보내기 (필기 포함)", systemImage: "square.and.arrow.up") }
+            }
         }
         Section("지우기") {
             Button("이 페이지 필기 지우기", role: .destructive) { documents.run("clearPage") }

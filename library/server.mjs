@@ -11,6 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { htmlWarnings, injectOverlay, readContent, saveSnapshot } from './lib/content.mjs';
 import { bookKind, CONVERTIBLE, convertDocument, isConvertible, OUTPUT_DIR, outputFor } from './lib/convert.mjs';
 import { writeExport } from './lib/export.mjs';
+import { writeInkPdf } from './lib/pdf-ink.mjs';
 import { isIgnoredForWatch, PathError, resolveInside, toRelative } from './lib/paths.mjs';
 import { isReviewId, publicReview, ReviewStore, validateLive, validateNavigate, validatePresence, ValidationError, writeAtomic } from './lib/store.mjs';
 
@@ -388,6 +389,21 @@ export async function startServer({ root, port = 5173, host = '::', cert, key, r
       }
       if (strokes) log(`  saved ${strokes} strokes of ${page} to ${path.relative(rootReal, folder)}`);
       return sendJson(res, 200, { strokes, dir: strokes ? path.relative(rootReal, folder) : null });
+    }
+    if (resource === 'pages' && id === 'pdf' && !action && req.method === 'POST') {
+      // The original PDF (or the PDF Keynote/Pages made) with the ink drawn on; a copy stays in .pencil-review/saved/<document>/.
+      const page = requirePage(await readJson(req));
+      const source = path.basename(path.dirname(page));
+      const name = `${source.slice(0, source.length - path.extname(source).length)} (필기).pdf`;
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const file = path.join(dataDir, 'saved', page.replace(/[\/]/g, '_'), `${stamp} ${name}`);
+      const { strokes } = await writeInkPdf(rootReal, store, page, file);
+      log(`  wrote ${strokes} strokes of ${page} to ${path.relative(rootReal, file)}`);
+      return send(res, 200, await fs.readFile(file), 'application/pdf', {
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(name)}`,
+        'X-Strokes': String(strokes),
+        'X-Saved': encodeURIComponent(path.relative(rootReal, file)),
+      });
     }
     if (resource === 'presence' && req.method === 'POST') {
       lastPresence = { ...validatePresence(await readJson(req)), at: new Date().toISOString() };

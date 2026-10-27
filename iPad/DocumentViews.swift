@@ -21,6 +21,8 @@ final class DocumentSession: ObservableObject {
     @Published private(set) var hidden = false
     @Published private(set) var warn = false
     @Published private(set) var status = "연결 중"
+    /// The open book is a converted PDF, slide deck or Word file, so it can go out as a PDF with its ink.
+    @Published private(set) var canExportPdf = false
     weak var controller: WebViewController?
     private var tools: WritingTools?
 
@@ -53,6 +55,18 @@ final class DocumentSession: ObservableObject {
             hidden = message["hidden"] as? Bool ?? false
             warn = message["warn"] as? Bool ?? false
             status = message["status"] as? String ?? ""
+            canExportPdf = message["pdf"] as? Bool ?? false
+        case "pdf":
+            // The page made the PDF on the Mac and hands it over for the share sheet (save to Files, AirDrop, mail).
+            guard let name = message["name"] as? String, let base64 = message["data"] as? String,
+                  let data = Data(base64Encoded: base64) else { return }
+            let file = FileManager.default.temporaryDirectory.appendingPathComponent((name as NSString).lastPathComponent)
+            do {
+                try data.write(to: file, options: .atomic)
+                controller?.share(file)
+            } catch {
+                controller?.run("window.__pencilReview?.toast?.('PDF를 기기에 저장하지 못했습니다')")
+            }
         default: break
         }
     }

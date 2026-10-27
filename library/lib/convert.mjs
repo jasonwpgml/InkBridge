@@ -19,6 +19,8 @@ const TEXTUTIL = new Set(['.docx', '.doc', '.rtf', '.odt']);
 export const CONVERTIBLE = new Set(['.pdf', ...KEYNOTE, ...PAGES]);
 const PAGE_WIDTH = 1600;
 const STAMP = '.pencil-source.json';
+// The PDF Keynote or Pages made, kept so the ink can be drawn back onto it (lib/pdf-ink.mjs).
+export const SOURCE_PDF = 'source.pdf';
 
 // What kind of book a document makes on the iPad library shelf.
 export function bookKind(sourceRel) {
@@ -56,6 +58,7 @@ end run`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // One PDF page per screen, fitted to it; the page number lives in the URL hash so ink, follow and sync work per page.
+// lib/pdf-ink.mjs pageLayout mirrors the header height, padding and image sizing below; change both together.
 export function pagedHtml(title, sizes) {
   const pages = JSON.stringify(sizes.map(([w, h], i) => ({ src: `pages/${String(i + 1).padStart(3, '0')}.png`, w, h })));
   return `<!doctype html>
@@ -137,13 +140,14 @@ export async function convertDocument(rootReal, rel) {
   const stat = await fs.stat(source);
   const outDir = path.join(rootReal, OUTPUT_DIR, rel);
   const stampFile = path.join(outDir, STAMP);
+  const ext = path.extname(rel).toLowerCase();
   try {
     const stamp = JSON.parse(await fs.readFile(stampFile, 'utf8'));
-    if (stamp.mtimeMs === stat.mtimeMs && stamp.size === stat.size) return { skipped: true, output: outputFor(rel) };
+    const needsPdf = (KEYNOTE.has(ext) || PAGES.has(ext)) && stamp.via !== 'textutil' && !(await fs.stat(path.join(outDir, SOURCE_PDF)).catch(() => null));
+    if (stamp.mtimeMs === stat.mtimeMs && stamp.size === stat.size && !needsPdf) return { skipped: true, output: outputFor(rel) };
   } catch {
     // Not converted yet.
   }
-  const ext = path.extname(rel).toLowerCase();
   const title = path.basename(rel);
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'pencil-review-'));
   try {
@@ -174,6 +178,7 @@ export async function convertDocument(rootReal, rel) {
       if (err.code !== 'EXDEV') throw err;
       await fs.cp(pagesDir, path.join(outDir, 'pages'), { recursive: true });
     });
+    if (pdf !== source) await fs.copyFile(pdf, path.join(outDir, SOURCE_PDF));
     await fs.writeFile(path.join(outDir, 'index.html'), pagedHtml(title, sizes));
     await fs.writeFile(stampFile, JSON.stringify({ mtimeMs: stat.mtimeMs, size: stat.size, pages: sizes.length }));
     return { output: outputFor(rel), pages: sizes.length };
