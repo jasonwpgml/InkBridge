@@ -11,6 +11,7 @@ xcrun swiftc -O -swift-version 5 -target "$(uname -m)-apple-macos14.0" \
 DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}" xcrun actool Shared/AppIcon.icon \
   --compile "$APP/Contents/Resources" --platform macosx --minimum-deployment-target 14.0 --app-icon AppIcon \
   --output-partial-info-plist /dev/null >/dev/null
+scripts/bundle-library.sh "$APP/Contents/Resources"
 python3 - "$APP" <<'PY'
 import plistlib, sys
 from pathlib import Path

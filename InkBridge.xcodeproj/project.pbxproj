@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		08180CB52ED115EF540A734C /* MacSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79D48095187B363CA571220D /* MacSurfaces.swift */; };
 		0FBE5EFA87F4698C33CB322C /* DocumentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77576FAD8D6DA0D1283A8BAB /* DocumentViews.swift */; };
+		2DA47EE6CFA83324C02A553D /* LibraryHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = C532B29C3526B1C37C88AD4B /* LibraryHost.swift */; };
 		35FCD7FB37A27AAB77487DE4 /* PadModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D887C301915A6988E14D055E /* PadModel.swift */; };
+		441B707D5216181C193FFE95 /* InkBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36F4F23DE2121F144D3AFA58 /* InkBrand.swift */; };
 		4AAE725DB3B8AE585139EF93 /* WritingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D73A7EFDE8C756576ED9A20 /* WritingToolbar.swift */; };
 		4C0C9FCCCE8501D1A9C0145D /* WritingTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011238E84831A83DB155EE7 /* WritingTools.swift */; };
 		4CEE2FCB3980DC4888CDA8BF /* InkGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 246B51AEA198D146C44C9776 /* InkGlass.swift */; };
@@ -20,12 +23,14 @@
 		67DF52F9A5ABE91AB40A8A43 /* CanvasStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A94DF822989394729E191B /* CanvasStage.swift */; };
 		7F1E7F46C32CAFBBBA89ED20 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB08A34140B5460FFEC11B6 /* LibraryView.swift */; };
 		808C9251C7C28B9650CCA054 /* PeerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07AFDE835F249CE6EF50B410 /* PeerLink.swift */; };
+		84E8FD5AD282271A8EAB2209 /* MacWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601387D80439BC51EB1398BA /* MacWindow.swift */; };
 		8BF275911064A6927653E5CF /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = ED6A199510879041E0359192 /* AppIcon.icon */; };
 		94AEDCC4E46C70BAF3994DB8 /* PeerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07AFDE835F249CE6EF50B410 /* PeerLink.swift */; };
 		AC2895BE21C28544691E5D62 /* MacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A409DA623C68301A4522DB8A /* MacApp.swift */; };
 		B2A3119703BB048B99926DA3 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776E9CDF74D433E9D969A585 /* Protocol.swift */; };
 		C2516DCE4519EA6203F0BEF8 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73605013578A0F0A14C27CDF /* HomeView.swift */; };
 		DA649FEC29B34FBEDC28DB6E /* PadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F284CDE64E67CC3A8F234C1A /* PadApp.swift */; };
+		E685516B3BF01280E6863415 /* InkBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36F4F23DE2121F144D3AFA58 /* InkBrand.swift */; };
 		EACA0EEDF9CDFDF07C8437C4 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776E9CDF74D433E9D969A585 /* Protocol.swift */; };
 /* End PBXBuildFile section */
 
@@ -35,17 +40,21 @@
 		0E90A829D58D4C663B43C5D3 /* InkBridgeMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InkBridgeMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		246B51AEA198D146C44C9776 /* InkGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkGlass.swift; sourceTree = "<group>"; };
 		2AC307B9E50A43B014EAD2D9 /* InkBridgePad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = InkBridgePad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		36F4F23DE2121F144D3AFA58 /* InkBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkBrand.swift; sourceTree = "<group>"; };
 		4A773FF6AAF9A718141ACB30 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5D73A7EFDE8C756576ED9A20 /* WritingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WritingToolbar.swift; sourceTree = "<group>"; };
+		601387D80439BC51EB1398BA /* MacWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWindow.swift; sourceTree = "<group>"; };
 		73605013578A0F0A14C27CDF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		77576FAD8D6DA0D1283A8BAB /* DocumentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViews.swift; sourceTree = "<group>"; };
 		776E9CDF74D433E9D969A585 /* Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
+		79D48095187B363CA571220D /* MacSurfaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSurfaces.swift; sourceTree = "<group>"; };
 		7EB08A34140B5460FFEC11B6 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		8DEF2D8CA483C56B4B9CED19 /* WebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewController.swift; sourceTree = "<group>"; };
 		A011238E84831A83DB155EE7 /* WritingTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WritingTools.swift; sourceTree = "<group>"; };
 		A1A94DF822989394729E191B /* CanvasStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasStage.swift; sourceTree = "<group>"; };
 		A409DA623C68301A4522DB8A /* MacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacApp.swift; sourceTree = "<group>"; };
 		B79883BC0343D2C74557AED5 /* InkOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkOverlay.swift; sourceTree = "<group>"; };
+		C532B29C3526B1C37C88AD4B /* LibraryHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryHost.swift; sourceTree = "<group>"; };
 		CA30D0435054D0808A088B88 /* ScreenStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenStreamer.swift; sourceTree = "<group>"; };
 		D3DB52AB94336F15F2FFEB40 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D887C301915A6988E14D055E /* PadModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadModel.swift; sourceTree = "<group>"; };
@@ -58,6 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				ED6A199510879041E0359192 /* AppIcon.icon */,
+				36F4F23DE2121F144D3AFA58 /* InkBrand.swift */,
 				07AFDE835F249CE6EF50B410 /* PeerLink.swift */,
 				776E9CDF74D433E9D969A585 /* Protocol.swift */,
 			);
@@ -107,7 +117,10 @@
 			children = (
 				D3DB52AB94336F15F2FFEB40 /* Info.plist */,
 				B79883BC0343D2C74557AED5 /* InkOverlay.swift */,
+				C532B29C3526B1C37C88AD4B /* LibraryHost.swift */,
 				A409DA623C68301A4522DB8A /* MacApp.swift */,
+				79D48095187B363CA571220D /* MacSurfaces.swift */,
+				601387D80439BC51EB1398BA /* MacWindow.swift */,
 				CA30D0435054D0808A088B88 /* ScreenStreamer.swift */,
 			);
 			path = Mac;
@@ -140,6 +153,7 @@
 			buildPhases = (
 				5A2FAA47F77BA72D26BC276D /* Sources */,
 				925216FBCFFFFB480B0802CD /* Resources */,
+				A1BD28E7FECA349582C80A70 /* Bundle library server */,
 			);
 			buildRules = (
 			);
@@ -210,13 +224,39 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		A1BD28E7FECA349582C80A70 /* Bundle library server */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle library server";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$SRCROOT/scripts/bundle-library.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		5A2FAA47F77BA72D26BC276D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				441B707D5216181C193FFE95 /* InkBrand.swift in Sources */,
 				675A465024830C4F5E3C6A68 /* InkOverlay.swift in Sources */,
+				2DA47EE6CFA83324C02A553D /* LibraryHost.swift in Sources */,
 				AC2895BE21C28544691E5D62 /* MacApp.swift in Sources */,
+				08180CB52ED115EF540A734C /* MacSurfaces.swift in Sources */,
+				84E8FD5AD282271A8EAB2209 /* MacWindow.swift in Sources */,
 				808C9251C7C28B9650CCA054 /* PeerLink.swift in Sources */,
 				EACA0EEDF9CDFDF07C8437C4 /* Protocol.swift in Sources */,
 				5F3865FB07CB8983FEC6244F /* ScreenStreamer.swift in Sources */,
@@ -230,6 +270,7 @@
 				67DF52F9A5ABE91AB40A8A43 /* CanvasStage.swift in Sources */,
 				0FBE5EFA87F4698C33CB322C /* DocumentViews.swift in Sources */,
 				C2516DCE4519EA6203F0BEF8 /* HomeView.swift in Sources */,
+				E685516B3BF01280E6863415 /* InkBrand.swift in Sources */,
 				4CEE2FCB3980DC4888CDA8BF /* InkGlass.swift in Sources */,
 				5FB6AFD51B99F1E03DCEAF56 /* LibraryAisle.swift in Sources */,
 				7F1E7F46C32CAFBBBA89ED20 /* LibraryView.swift in Sources */,
@@ -271,6 +312,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = Mac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -289,6 +331,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = Mac/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

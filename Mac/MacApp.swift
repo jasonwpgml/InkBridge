@@ -7,7 +7,7 @@ final class HostModel: ObservableObject {
     @Published var selected: CGDirectDisplayID = 0
     @Published var streaming = false
     @Published var busy = false
-    @Published var message = "화면을 선택하고, iPad에서 아래 코드를 입력하세요."
+    @Published var message = "보낼 화면을 고르고, iPad에서 위 연결 코드를 입력하세요."
     private var content: SCShareableContent?
     private let capture = ScreenStreamer()
     private let overlay = InkOverlay()
@@ -111,60 +111,12 @@ final class HostModel: ObservableObject {
     }
 }
 
-struct HostView: View {
-    @ObservedObject var model: HostModel
-    @ObservedObject var link: PeerLink
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("InkBridge").font(.largeTitle.bold())
-                Text("맥 화면을 보고, iPad에서 바로 쓰기").foregroundStyle(.secondary)
-            }
-            GroupBox {
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(link.connectedName == nil ? "iPad에서 입력할 연결 코드" : "연결된 iPad")
-                            .font(.caption).foregroundStyle(.secondary)
-                        Text(link.connectedName ?? link.code)
-                            .font(.system(size: 30, weight: .semibold, design: .monospaced)).textSelection(.enabled)
-                    }
-                    Spacer()
-                    if link.connectedName != nil { Button("연결 해제") { model.stop(); link.disconnect() } }
-                }.padding(10)
-            }
-            HStack {
-                if model.displays.isEmpty {
-                    Button("화면 목록 불러오기") { model.loadDisplays() }
-                } else {
-                    Picker("전송 화면", selection: $model.selected) {
-                        ForEach(model.displays, id: \.displayID) { display in
-                            Text(model.displayName(display)).tag(display.displayID)
-                        }
-                    }.disabled(model.streaming)
-                    Button { model.loadDisplays() } label: { Image(systemName: "arrow.clockwise") }
-                        .disabled(model.streaming).help("화면 목록 새로고침")
-                }
-                if model.busy { ProgressView().controlSize(.small) }
-            }.disabled(model.busy)
-            Text(model.message).font(.callout).fixedSize(horizontal: false, vertical: true)
-            HStack {
-                Label(link.status, systemImage: link.connectedName == nil ? "ipad" : "checkmark.circle.fill")
-                    .font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button(model.streaming ? "전송 중지" : "화면 전송 시작") {
-                    if model.streaming { model.stop() } else { model.start() }
-                }.buttonStyle(.borderedProminent)
-                    .disabled(model.busy || (!model.streaming && (link.connectedName == nil || model.displays.isEmpty)))
-            }
-        }.padding(28).frame(width: 580)
-    }
-}
-
 @main struct InkBridgeMacApp: App {
     @StateObject private var model = HostModel()
+    @StateObject private var library = LibraryHost()
     var body: some Scene {
-        WindowGroup("InkBridge Mac") { HostView(model: model, link: model.link) }
+        WindowGroup("InkBridge Mac") { MacWindow(model: model, link: model.link, library: library) }
+            .windowStyle(.hiddenTitleBar)
             .windowResizability(.contentSize)
     }
 }

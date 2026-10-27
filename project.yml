@@ -22,6 +22,12 @@ targets:
         PRODUCT_NAME: InkBridge Mac
         ENABLE_APP_SANDBOX: NO
         CODE_SIGN_IDENTITY: Apple Development
+        # The library bundling script writes into the app's Resources.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    postBuildScripts:
+      - name: Bundle library server
+        script: '"$SRCROOT/scripts/bundle-library.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"'
+        basedOnDependencyAnalysis: false
     info:
       path: Mac/Info.plist
       properties:

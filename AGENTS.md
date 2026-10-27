@@ -12,6 +12,8 @@ InkBridge = Apple Pencil writing over a Mac's screen and documents. Three versio
 | 맥 화면 (screen) | `Mac/`, `iPad/`, `Shared/` | Mac app + iPad app | MultipeerConnectivity, packets in `Shared/Protocol.swift` |
 | 서재 (library) | `library/` (Node server), `iPad/` | Mac server + iPad app (or Safari) | HTTP on the LAN, token in `?t=` / cookie / `X-PR-Token` |
 
+The Mac app (`Mac/MacWindow.swift`) opens on a start screen with two modes: 화면 보내기 (screen version) and 책장 열기 (runs the library server). Its panels are opaque by default (`opaqueSurfaces`, the gear's 불투명 모드); off, they are Liquid Glass. Launch arguments `-macMode screen|library`, `-appearance light|dark` and `-opaqueSurfaces NO` open a page or look for screenshots.
+
 `iPad/PadApp.swift` picks the mode: `PadMode.home | .screen | .library`. `HomeView` is the start screen; `LibraryView` is the bookshelf; `DocumentModeView` switches between the shelf and the reader (`ReviewWebView` → `WebViewController`).
 
 ## Commands
@@ -22,7 +24,7 @@ InkBridge = Apple Pencil writing over a Mac's screen and documents. Three versio
 (cd library && node --test 'test/*.test.mjs')   # library server
 ./sidecar/test.sh                        # Sidecar model + rendering checks
 xcodegen generate                        # after adding/removing Swift files or editing project.yml
-./scripts/build-mac.sh                   # build/InkBridge Mac.app
+./scripts/build-mac.sh                   # build/InkBridge Mac.app (bundles library/ via scripts/bundle-library.sh)
 ./sidecar/build.sh                       # sidecar/InkBridge.app
 node library/server.mjs <folder> [--port 5173]   # library server
 ```
@@ -53,6 +55,7 @@ Run the server on a copy of `library/examples/` in a temp folder, not on the exa
 ## Rules
 
 - **No dependencies in `library/`.** Node standard library only; tests use `node:test`.
+- **The Mac app runs the library server.** `Mac/LibraryHost.swift` copies the bundled `library/` (server.mjs, lib, client, scripts) to `~/Library/Application Support/InkBridge/library`, finds Node (Homebrew, fnm, Volta, then a login shell) and runs it on the folder the user picked; a busy port moves to the next one, and the port is kept for the next launch so the iPad's bookcase address stays valid. A new top-level file the server needs must be added to `scripts/bundle-library.sh`.
 - **Mac and iPad ship together.** Changing `Shared/Protocol.swift` packet layouts breaks older builds on the other side; bump nothing silently, say so in the report.
 - **Legacy names stay.** The library was once "Pencil Review". Keep `.pencil-review/` (data dir), the `pr_token` cookie, `/__pr/` routes, `window.__pencilReview` and the `pencilReview` message handler and IndexedDB name: renaming them loses users' notes. User-visible text says 서재 / InkBridge.
 - **Glass look.** iPad surfaces use `inkGlass(_:)` (toolbars, honors 불투명 모드) or `glassCard(_:)` (home and library cards). iOS 26 `glassEffect`, with a material fallback below.
