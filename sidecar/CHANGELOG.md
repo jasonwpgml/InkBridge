@@ -125,3 +125,10 @@
 - 원본 소스: `../../work/inkbridge-before-tools-065/`. UI 검수 코드: `../../work/inkbridge-tool-preview/`. `deslop-review`의 Swift 자동 검사는 지원되지 않아 직접 빌드·회귀 검사·변경 코드 검수를 사용했습니다.
 
 [Goodnotes의 색·굵기 선택과 재탭 설정](https://support.goodnotes.com/hc/en-us/articles/7353756785679-Write-and-customize-ink-with-the-Pen-tool), [Notability의 도구별 프리셋](https://support.gingerlabs.com/en-us/articles/16300108-getting-started-with-notability), [Apple Markup의 접는 도구 막대](https://support.apple.com/en-ie/guide/ipad/ipad6350b8dc/ipados)를 참고했습니다.
+
+## 0.6.6 — 획 끝 예측 (2026-10-28)
+
+- Sidecar는 펜 입력이 맥에 늦게 도착하므로, 펜·형광펜으로 쓰는 동안 최근 50ms의 입력으로 펜 방향과 속도를 구해 획 끝을 28ms만큼(최대 16pt) 앞서 그립니다(`InkPredictor`). 예측한 부분은 화면에만 그리고 획에는 저장하지 않으며, 다음 입력이 오면 실제 점으로 바뀝니다.
+- 입력이 3개 미만일 때, 펜이 거의 멈췄을 때(초당 40pt 미만), 방향이 급히 꺾일 때는 예측하지 않습니다. 입력이 42ms 동안 오지 않거나 펜을 떼면 예측한 끝을 지웁니다. 화살표와 지우개는 예측하지 않습니다.
+- 형광펜은 예측 부분을 같은 경로에 이어 한 번에 그려 겹친 곳이 진해지지 않습니다.
+- `./test.sh`: 모델 66개(예측 6개 추가)·렌더링 331개 통과, 빌드·서명 통과. 실제 iPad Pencil 필기감과 체감 지연 감소, 예측이 튀는지는 확인하지 않았습니다. 앞서 그리는 시간은 Sidecar 왕복 지연의 일부만 가리며, 너무 길게 잡으면 획 끝이 흔들립니다.

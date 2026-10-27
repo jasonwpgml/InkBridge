@@ -85,6 +85,43 @@ struct InkStroke: Codable, Equatable {
     }
 }
 
+/// Guesses where the pen is by now from its last samples, so the live stroke can be drawn a little ahead of
+/// input that reaches the Mac late over Sidecar. The guess is only drawn, never added to the stroke.
+struct InkPredictor {
+    static let lead: TimeInterval = 0.028
+    static let window: TimeInterval = 0.05
+    static let maxDistance = 16.0
+    static let minSpeed = 40.0
+
+    private var samples: [(point: InkPoint, time: TimeInterval)] = []
+
+    mutating func reset() { samples.removeAll() }
+
+    /// `point` is in view points, `time` in seconds (NSEvent.timestamp).
+    mutating func add(_ point: InkPoint, at time: TimeInterval) {
+        if let last = samples.last, time <= last.time { samples.removeAll() }
+        samples.append((point, time))
+        samples.removeAll { time - $0.time > Self.window }
+    }
+
+    /// Nil when there is too little to go on, the pen is nearly still, or it is turning sharply.
+    func predicted() -> InkPoint? {
+        guard samples.count >= 3, let first = samples.first, let last = samples.last else { return nil }
+        let span = last.time - first.time
+        guard span > 0.004 else { return nil }
+        let vx = (last.point.x - first.point.x) / span, vy = (last.point.y - first.point.y) / span
+        let speed = hypot(vx, vy)
+        guard speed >= Self.minSpeed else { return nil }
+        // At a corner the average direction points away from where the pen now goes.
+        let previous = samples[samples.count - 2].point
+        let rx = last.point.x - previous.x, ry = last.point.y - previous.y
+        let recent = hypot(rx, ry)
+        guard recent > 0, (rx * vx + ry * vy) / (recent * speed) > 0.8 else { return nil }
+        let distance = min(speed * Self.lead, Self.maxDistance)
+        return InkPoint(x: last.point.x + vx / speed * distance, y: last.point.y + vy / speed * distance)
+    }
+}
+
 final class InkDocument {
     private struct FileContents: Codable {
         var version: Int

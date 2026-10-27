@@ -13,6 +13,10 @@ final class InkCanvas: NSView {
     private var erasing = false
     private let backingStore = InkBackingStore()
     private let livePath = InkLivePath()
+    private var predictor = InkPredictor()
+    /// Drawn past the last input point while the pen moves; cleared when samples stop coming.
+    private var predictedTip: NSPoint?
+    private var predictedRect = NSRect.null
     private var previousErasePoint: InkPoint?
     private var inkCursor: NSCursor = .crosshair
     private var strokeCursor: NSCursor = .crosshair
@@ -51,7 +55,12 @@ final class InkCanvas: NSView {
         }
         if let stroke = current {
             livePath.update(stroke, size: bounds.size)
-            render(stroke, size: bounds.size, path: livePath.path)
+            if let predictedTip, let ahead = livePath.path.copy() as? NSBezierPath {
+                ahead.line(to: predictedTip)
+                render(stroke, size: bounds.size, path: ahead)
+            } else {
+                render(stroke, size: bounds.size, path: livePath.path)
+            }
         }
     }
     override func resetCursorRects() {
@@ -76,6 +85,8 @@ final class InkCanvas: NSView {
                                 width: controller.lineWidth * (controller.tool == .highlighter ? 6 : 1),
                                 points: [position(event)])
             setNeedsDisplay(livePath.update(current!, size: bounds.size).intersection(bounds))
+            predictor.reset()
+            predict(event)
         }
         strokeCursor.set()
     }
@@ -90,6 +101,34 @@ final class InkCanvas: NSView {
         }
         let dirty = livePath.update(current!, size: bounds.size)
         if !dirty.isNull { setNeedsDisplay(dirty.intersection(bounds)) }
+        predict(event)
+    }
+    private func predict(_ event: NSEvent) {
+        guard let stroke = current, stroke.tool != .arrow, let last = stroke.points.last else { return clearPrediction() }
+        let point = convert(event.locationInWindow, from: nil)
+        predictor.add(InkPoint(x: point.x, y: point.y), at: event.timestamp)
+        let tip = stroke.points.count < 2 ? nil : predictor.predicted().map { NSPoint(x: $0.x, y: $0.y) }
+        guard tip != predictedTip else { return }
+        setNeedsDisplay(predictedRect)
+        predictedTip = tip
+        predictedRect = .null
+        if let tip {
+            let end = NSPoint(x: last.x * bounds.width, y: last.y * bounds.height)
+            let padding = stroke.width / 2 + 2
+            predictedRect = NSRect(x: min(end.x, tip.x), y: min(end.y, tip.y), width: abs(tip.x - end.x),
+                                   height: abs(tip.y - end.y)).insetBy(dx: -padding, dy: -padding).intersection(bounds)
+            setNeedsDisplay(predictedRect)
+        }
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(clearPrediction), object: nil)
+        if tip != nil {
+            perform(#selector(clearPrediction), with: nil, afterDelay: InkPredictor.lead * 1.5, inModes: [.common])
+        }
+    }
+    @objc private func clearPrediction() {
+        guard predictedTip != nil else { return }
+        setNeedsDisplay(predictedRect)
+        predictedTip = nil
+        predictedRect = .null
     }
     override func mouseUp(with event: NSEvent) {
         mouseDragged(with: event)
@@ -111,6 +150,7 @@ final class InkCanvas: NSView {
     func invalidateInk() { backingStore.invalidate(); needsDisplay = true }
     func finishStroke() {
         let hadInput = current != nil || erasing
+        clearPrediction()
         if let stroke = current {
             livePath.update(stroke, size: bounds.size)
             if document.add(stroke) {
