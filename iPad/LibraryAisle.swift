@@ -243,17 +243,9 @@ private struct BookcaseEnd: View {
                 .strokeBorder(.primary.opacity(0.45), style: StrokeStyle(lineWidth: 2, dash: [7, 5]))
                 .overlay { Image(systemName: "plus").font(.system(size: 26, weight: .light)) }
         case .cloud:
-            // Material rather than glassCard: Liquid Glass ignores the perspective of rotation3DEffect.
-            Rectangle().fill(.ultraThinMaterial)
-                .overlay { Rectangle().strokeBorder(.primary.opacity(0.2)) }
-                .overlay {
-                    VStack(spacing: 10) {
-                        Image(systemName: "lock.fill").font(.system(size: 22, weight: .light))
-                        Text("공용\n클라우드").font(.system(size: 13, weight: .semibold, design: .serif)).multilineTextAlignment(.center)
-                        Text("준비 중").font(.system(size: 10, weight: .medium)).foregroundStyle(.primary.opacity(0.6))
-                    }
-                    .offset(y: -caseHeight * 0.16)
-                }
+            EndPanel { EmptyView() }
+                .overlay { DustSheet(seed: 3, folds: 2) }
+                .overlay(alignment: .top) { SheetTag().padding(.top, caseHeight * 0.18) }
         }
     }
 
@@ -272,11 +264,113 @@ private struct BookcaseEnd: View {
                     }
                 }
         case .cloud:
-            // Shelves behind frosted glass, not open yet.
+            // Not open yet: a dust sheet is thrown over the shelves.
             Stack(seed: 7, header: "공용 클라우드 서재")
-                .opacity(0.4)
-                .overlay { Rectangle().fill(.ultraThinMaterial).overlay { Rectangle().strokeBorder(.primary.opacity(0.15)) } }
+                .overlay { DustSheet(seed: 7, folds: 7) }
+                .overlay { LinearGradient(colors: [.clear, .black.opacity(0.35)], startPoint: .leading, endPoint: .trailing) }
         }
+    }
+}
+
+/// A linen dust sheet thrown over a bookcase that is not open yet: soft folds hanging from the top, a wavy hem just
+/// above the plinth.
+private struct DustSheet: View {
+    let seed: Int
+    let folds: Int
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        Canvas { context, size in
+            var random = SeededRandom(seed)
+            let hem = size.height - 24
+            let wave = (0...folds * 2).map { _ in random.next() * 9 - 3 }
+            func hemY(_ x: CGFloat) -> CGFloat {
+                let t = x / size.width * CGFloat(folds * 2)
+                let i = min(Int(t), folds * 2 - 1), f = t - CGFloat(i)
+                return hem + wave[i] + (wave[i + 1] - wave[i]) * (1 - cos(f * .pi)) / 2
+            }
+            var sheet = Path()
+            sheet.move(to: .zero)
+            sheet.addLine(to: CGPoint(x: size.width, y: 0))
+            for step in stride(from: size.width, through: 0, by: -4) { sheet.addLine(to: CGPoint(x: step, y: hemY(step))) }
+            sheet.closeSubpath()
+
+            let light = scheme == .dark ? 0.78 : 1.0
+            context.fill(sheet, with: .linearGradient(
+                Gradient(colors: [Color(red: 0.93 * light, green: 0.9 * light, blue: 0.83 * light),
+                                  Color(red: 0.8 * light, green: 0.76 * light, blue: 0.68 * light)]),
+                startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height)))
+            context.clip(to: sheet)
+            // Folds fan out from where the sheet rests on the top board.
+            let pitch = size.width / CGFloat(folds)
+            for i in 0..<folds {
+                let top = pitch * (CGFloat(i) + 0.5) + (random.next() - 0.5) * pitch * 0.3
+                let bottom = top + (random.next() - 0.5) * pitch * 0.5
+                let topWidth = pitch * 0.25, bottomWidth = pitch * (0.7 + random.next() * 0.3)
+                var fold = Path()
+                fold.move(to: CGPoint(x: top - topWidth / 2, y: 0))
+                fold.addLine(to: CGPoint(x: top + topWidth / 2, y: 0))
+                fold.addLine(to: CGPoint(x: bottom + bottomWidth / 2, y: size.height))
+                fold.addLine(to: CGPoint(x: bottom - bottomWidth / 2, y: size.height))
+                fold.closeSubpath()
+                context.fill(fold, with: .linearGradient(
+                    Gradient(colors: [.white.opacity(0.3), .clear, .black.opacity(0.2), .clear]),
+                    startPoint: CGPoint(x: bottom - bottomWidth / 2, y: 0), endPoint: CGPoint(x: bottom + bottomWidth / 2, y: 0)))
+            }
+            // Where the cloth bends over the top board.
+            context.fill(Path(CGRect(x: 0, y: 0, width: size.width, height: 14)),
+                         with: .linearGradient(Gradient(colors: [.black.opacity(0.18), .clear]), startPoint: .zero, endPoint: CGPoint(x: 0, y: 14)))
+            var edge = Path()
+            edge.move(to: CGPoint(x: 0, y: hemY(0)))
+            for step in stride(from: 4, through: size.width, by: 4) { edge.addLine(to: CGPoint(x: step, y: hemY(step))) }
+            context.stroke(edge, with: .color(.black.opacity(0.3)), lineWidth: 2)
+        }
+    }
+}
+
+/// A paper tag tied to the dust sheet: the cloud library is not open yet.
+private struct SheetTag: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(Color(red: 0.55, green: 0.45, blue: 0.32)).frame(width: 1, height: 22)
+            VStack(spacing: 5) {
+                Circle().strokeBorder(.black.opacity(0.35), lineWidth: 1).frame(width: 6, height: 6)
+                Image(systemName: "lock.fill").font(.system(size: 13))
+                Text("공용\n클라우드").font(.system(size: 11, weight: .semibold, design: .serif)).multilineTextAlignment(.center)
+                Text("준비 중").font(.system(size: 9, weight: .medium)).opacity(0.6)
+            }
+            .foregroundStyle(Color(red: 0.2, green: 0.15, blue: 0.1))
+            .padding(.horizontal, 7).padding(.vertical, 7)
+            .background(Color(red: 0.86, green: 0.76, blue: 0.56), in: TagShape())
+            .shadow(color: .black.opacity(0.3), radius: 1.5, y: 1.5)
+        }
+        .rotationEffect(.degrees(-5), anchor: .top)
+    }
+}
+
+/// A luggage tag: a rectangle with its top corners clipped.
+private struct TagShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let cut = min(rect.width, rect.height) * 0.22
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + cut, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - cut, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + cut))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + cut))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The same made-up books and folds every time a bookcase is drawn.
+private struct SeededRandom {
+    private var state: UInt64
+    init(_ seed: Int) { state = UInt64(truncatingIfNeeded: seed &* 2_654_435_761 &+ 1) }
+    mutating func next() -> CGFloat {
+        state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+        return CGFloat(state >> 33) / CGFloat(UInt32.max >> 1)
     }
 }
 
@@ -345,11 +439,8 @@ private struct Stack: View {
 
     var body: some View {
         Canvas { context, size in
-            var state = UInt64(truncatingIfNeeded: seed &* 2_654_435_761 &+ 1)
-            func next() -> CGFloat {
-                state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
-                return CGFloat(state >> 33) / CGFloat(UInt32.max >> 1)
-            }
+            var random = SeededRandom(seed)
+            func next() -> CGFloat { random.next() }
             let cap: CGFloat = 26, plinth: CGFloat = 34, post: CGFloat = 8
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.1, green: 0.065, blue: 0.04)))
             let rows = 6
