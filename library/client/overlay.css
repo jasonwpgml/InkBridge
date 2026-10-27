@@ -1,0 +1,241 @@
+#__pr-canvas {
+  position: absolute;
+  left: 0;
+  pointer-events: none;
+  z-index: 2147483000;
+}
+
+#__pr-bar,
+#__pr-menu,
+#__pr-toast {
+  --pr-bg: rgba(250, 250, 250, 0.96);
+  --pr-fg: #1c1c1e;
+  --pr-muted: #6e6e73;
+  --pr-active: rgba(0, 0, 0, 0.08);
+  --pr-line: rgba(0, 0, 0, 0.1);
+  --pr-warn: #c4320a;
+  --pr-pending: #d97706;
+  --pr-danger: #d1242f;
+  font: 14px/1.3 -apple-system, "Apple SD Gothic Neo", system-ui, sans-serif;
+  color: var(--pr-fg);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  #__pr-bar,
+  #__pr-menu,
+  #__pr-toast {
+    --pr-bg: rgba(44, 44, 46, 0.96);
+    --pr-fg: #f2f2f7;
+    --pr-muted: #aeaeb2;
+    --pr-active: rgba(255, 255, 255, 0.14);
+    --pr-line: rgba(255, 255, 255, 0.16);
+    --pr-warn: #ff9f0a;
+    --pr-pending: #ffb340;
+    --pr-danger: #ff6961;
+  }
+}
+
+#__pr-bar {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2147483001;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  max-width: calc(100vw - 24px);
+  padding: 5px;
+  border-radius: 14px;
+  background: var(--pr-bg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  touch-action: manipulation;
+}
+
+#__pr-bar .__pr-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  transform-origin: 100% 100%;
+}
+
+#__pr-bar[data-collapsed] .__pr-tools {
+  display: none;
+}
+
+#__pr-bar button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+#__pr-bar button[aria-pressed="true"] {
+  background: var(--pr-active);
+}
+
+#__pr-bar button:disabled {
+  opacity: 0.3;
+}
+
+#__pr-bar .__pr-sep {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--pr-line);
+}
+
+#__pr-bar .__pr-swatch {
+  width: 32px;
+}
+
+#__pr-bar .__pr-swatch::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+/* The selected color gets a ring instead of a filled background. */
+#__pr-bar .__pr-swatch[aria-pressed="true"] {
+  background: transparent;
+}
+
+#__pr-bar .__pr-swatch[aria-pressed="true"]::before {
+  box-shadow: 0 0 0 2px var(--pr-bg), 0 0 0 4px var(--c);
+}
+
+#__pr-bar .__pr-size {
+  width: 36px;
+}
+
+#__pr-bar .__pr-more {
+  position: relative;
+}
+
+#__pr-bar .__pr-more[data-badge]:not([data-badge=""])::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pr-pending);
+}
+
+#__pr-bar .__pr-more[data-badge="warn"]::after {
+  background: var(--pr-warn);
+}
+
+#__pr-bar .__pr-toggle {
+  touch-action: none;
+  cursor: grab;
+}
+
+#__pr-bar[data-dragging] .__pr-toggle {
+  cursor: grabbing;
+}
+
+#__pr-bar[data-dragging] {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+/* Anchored to a left or top corner: the toggle comes first and the tools open away from it. */
+#__pr-bar[data-side="left"] {
+  flex-direction: row-reverse;
+}
+
+#__pr-bar[data-side="left"] .__pr-tools {
+  justify-content: flex-start;
+  transform-origin: 0 100%;
+}
+
+#__pr-bar[data-vside="top"] {
+  align-items: flex-start;
+}
+
+#__pr-menu {
+  position: fixed;
+  z-index: 2147483002;
+  width: 248px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--pr-bg);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+}
+
+#__pr-menu[hidden],
+#__pr-toast[hidden] {
+  display: none;
+}
+
+#__pr-menu .__pr-status {
+  padding: 6px 10px 8px;
+  color: var(--pr-muted);
+  font-size: 12px;
+}
+
+#__pr-menu .__pr-status[data-warn] {
+  color: var(--pr-warn);
+}
+
+#__pr-menu .__pr-group {
+  padding: 4px 0;
+  border-top: 1px solid var(--pr-line);
+}
+
+#__pr-menu .__pr-group-title {
+  padding: 4px 10px 2px;
+  color: var(--pr-muted);
+  font-size: 12px;
+}
+
+#__pr-menu button {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+#__pr-menu button:active {
+  background: var(--pr-active);
+}
+
+#__pr-menu button.__pr-danger {
+  color: var(--pr-danger);
+}
+
+#__pr-toast {
+  position: fixed;
+  left: 50%;
+  top: 16px;
+  z-index: 2147483003;
+  max-width: calc(100vw - 32px);
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--pr-bg);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+  overflow-wrap: anywhere;
+}

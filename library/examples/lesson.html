@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>출시 후 기간으로 중고폰 가격 예측하기</title>
+<style>
+  :root {
+    --ink: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --face: #f5f5f7;
+    --point: #1f6feb;
+    --model: #d1495b;
+    --error: #e8a33d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: #fff;
+    font: 18px/1.65 -apple-system, "Apple SD Gothic Neo", system-ui, sans-serif;
+    word-break: keep-all;
+  }
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 24px;
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar h1 { margin: 0 auto 0 0; font-size: 17px; }
+  .bar button, .controls button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font: inherit;
+    font-size: 16px;
+    color: inherit;
+  }
+  .bar button[aria-current="step"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  @media (min-width: 900px) {
+    main { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+  }
+  figure { margin: 0; background: var(--face); padding: 12px; }
+  svg { display: block; width: 100%; height: auto; }
+  .axis { stroke: var(--muted); stroke-width: 1; }
+  .grid { stroke: #e5e5ea; stroke-width: 1; }
+  .tick { fill: var(--muted); font-size: 12px; }
+  .label { fill: var(--ink); font-size: 13px; }
+  .pt { fill: var(--point); }
+  .model { stroke: var(--model); stroke-width: 3; }
+  .err { stroke: var(--error); stroke-width: 2; stroke-dasharray: 4 3; }
+  .probe { fill: var(--model); }
+  .probe-guide { stroke: var(--model); stroke-width: 1; stroke-dasharray: 3 3; }
+  figcaption { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  h2 { font-size: 24px; margin: 0 0 8px; }
+  .eq { font: 20px/1.4 "SF Mono", ui-monospace, Menlo, monospace; padding: 8px 0; }
+  .readout { font-size: 20px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .readout strong { color: var(--model); }
+  label.slider { display: grid; grid-template-columns: 5ch 1fr 7ch; gap: 8px; align-items: center; margin: 8px 0; }
+  input[type=range] { width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  details { margin-top: 12px; color: var(--muted); }
+  summary { cursor: pointer; min-height: 32px; }
+  [hidden] { display: none !important; }
+  .fade { transition: opacity 0.4s; }
+  @media (prefers-reduced-motion: reduce) { .fade { transition: none; } }
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1>출시 후 기간으로 중고폰 가격 예측하기</h1>
+  <button type="button" id="prev" aria-label="이전 단계">←</button>
+  <button type="button" data-step="1">1</button>
+  <button type="button" data-step="2">2</button>
+  <button type="button" data-step="3">3</button>
+  <button type="button" data-step="4">4</button>
+  <button type="button" id="next" aria-label="다음 단계">→</button>
+</header>
+
+<main>
+  <figure>
+    <svg id="chart" viewBox="0 0 640 420" role="img" aria-label="출시 후 기간과 중고폰 가격 그래프"></svg>
+    <figcaption>같은 모델의 중고폰 거래 6건 · 가상 데이터</figcaption>
+  </figure>
+
+  <div>
+    <section data-for="1">
+      <h2>중고폰 시세 데이터</h2>
+      <p>점 하나가 거래 한 건입니다. 가로축은 출시 후 지난 개월 수, 세로축은 거래 가격입니다.</p>
+      <p>출시 후 기간이 길수록 가격이 내려가는 경향이 보입니다. 이 경향을 식으로 나타내면, 거래 기록이 없는 기간의 가격도 예측할 수 있습니다.</p>
+    </section>
+
+    <section data-for="2" hidden>
+      <h2>예측함수란 무엇인가?</h2>
+      <p>출시 후 기간 x를 넣으면 예상 가격 ŷ를 내놓는 식을 예측함수라고 합니다. 여기서는 직선을 씁니다.</p>
+      <div class="eq">ŷ = <span class="w-val">w</span> · x + <span class="b-val">b</span></div>
+      <label class="slider">w <input type="range" id="w" min="-30" max="10" step="0.1"> <output class="w-val"></output></label>
+      <label class="slider">b <input type="range" id="b" min="300" max="800" step="1"> <output class="b-val"></output></label>
+      <p>w 값이 변하면 직선의 기울기가, b 값이 변하면 직선의 위치가 변합니다.</p>
+      <div class="readout">출시 후 6개월 된 중고폰의 예측값: <strong id="probe-out"></strong></div>
+      <p>이 값은 예측함수 위의 한 점입니다.</p>
+    </section>
+
+    <section data-for="3" hidden>
+      <h2>얼마나 틀렸는지 재는 MSE</h2>
+      <p>점선은 실제 거래 가격과 예측값의 차이, 즉 오차입니다.</p>
+      <p>이 직선이 얼마나 틀렸는지 오차를 모아 계산하는 식이 MSE입니다. 각 오차를 제곱해서 평균을 구하면 됩니다.</p>
+      <div class="eq">MSE = <span id="mse-sum"></span></div>
+      <div class="readout">현재 직선의 MSE: <strong id="mse-out"></strong></div>
+      <details>
+        <summary>궁금하면: 오차를 그대로 더하지 않는 이유</summary>
+        <p>실제 가격보다 높게 예측한 오차는 +, 낮게 예측한 오차는 −라서 그대로 더하면 서로 지워집니다. 제곱하면 모두 0 이상이 됩니다.</p>
+      </details>
+    </section>
+
+    <section data-for="4" hidden>
+      <h2>경사하강법으로 w와 b 찾기</h2>
+      <p>처음엔 임의로 w = 0, b = 500에서 시작합니다. 한 번 반복할 때마다 MSE가 줄어드는 방향으로 w와 b를 조금씩 옮깁니다.</p>
+      <div class="controls">
+        <button type="button" id="play">재생</button>
+        <button type="button" id="step1">한 번 반복</button>
+        <button type="button" id="reset">처음으로</button>
+      </div>
+      <div class="readout">반복 <strong id="iter">0</strong>회 · w = <strong class="w-val"></strong>, b = <strong class="b-val"></strong> · MSE <strong id="mse-out-4"></strong></div>
+      <p>직선이 점들 사이로 다가가는 동안 MSE가 어떻게 변하는지 관찰해 보세요.</p>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  const X = [3, 6, 9, 12, 18, 24];
+  const Y = [640, 590, 560, 520, 440, 380];
+  const PROBE_X = 6;
+  // Separate step sizes keep both parameters converging within ~40 iterations on this data.
+  const RATE_W = 0.004;
+  const RATE_B = 0.2;
+  const START = { w: 0, b: 500 };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const svg = document.getElementById('chart');
+  const NS = 'http://www.w3.org/2000/svg';
+  const box = { left: 64, right: 620, top: 20, bottom: 370 };
+  const xRange = [0, 30];
+  const yRange = [250, 750];
+  const sx = (x) => box.left + ((x - xRange[0]) / (xRange[1] - xRange[0])) * (box.right - box.left);
+  const sy = (y) => box.bottom - ((y - yRange[0]) / (yRange[1] - yRange[0])) * (box.bottom - box.top);
+
+  const state = { step: 1, w: -5, b: 650, playing: false, iter: 0 };
+
+  function el(tag, attrs, parent = svg) {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    parent.append(node);
+    return node;
+  }
+
+  // Static axes and grid.
+  for (let y = 300; y <= 700; y += 100) {
+    el('line', { x1: box.left, x2: box.right, y1: sy(y), y2: sy(y), class: 'grid' });
+    el('text', { x: box.left - 8, y: sy(y) + 4, 'text-anchor': 'end', class: 'tick' }).textContent = y;
+  }
+  for (let x = 0; x <= 30; x += 6) {
+    el('text', { x: sx(x), y: box.bottom + 18, 'text-anchor': 'middle', class: 'tick' }).textContent = x;
+  }
+  el('line', { x1: box.left, x2: box.right, y1: box.bottom, y2: box.bottom, class: 'axis' });
+  el('line', { x1: box.left, x2: box.left, y1: box.top, y2: box.bottom, class: 'axis' });
+  el('text', { x: (box.left + box.right) / 2, y: box.bottom + 40, 'text-anchor': 'middle', class: 'label' }).textContent = '출시 후 기간 (개월)';
+  el('text', { x: 16, y: (box.top + box.bottom) / 2, 'text-anchor': 'middle', class: 'label', transform: `rotate(-90 16 ${(box.top + box.bottom) / 2})` }).textContent = '거래 가격 (달러)';
+
+  const errGroup = el('g', { class: 'fade' });
+  const errLines = X.map(() => el('line', { class: 'err' }, errGroup));
+  const model = el('line', { class: 'model fade' });
+  const probeGuide = el('line', { class: 'probe-guide fade' });
+  const probe = el('circle', { r: 7, class: 'probe fade' });
+  X.forEach((x, i) => el('circle', { cx: sx(x), cy: sy(Y[i]), r: 6, class: 'pt' }));
+
+  const predict = (x) => state.w * x + state.b;
+  const mse = () => X.reduce((s, x, i) => s + (predict(x) - Y[i]) ** 2, 0) / X.length;
+  const fmt = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toLocaleString('ko-KR');
+
+  function render() {
+    const show = (node, on) => (node.style.opacity = on ? 1 : 0);
+    const [x0, x1] = xRange;
+    model.setAttribute('x1', sx(x0));
+    model.setAttribute('y1', sy(predict(x0)));
+    model.setAttribute('x2', sx(x1));
+    model.setAttribute('y2', sy(predict(x1)));
+    errLines.forEach((line, i) => {
+      line.setAttribute('x1', sx(X[i]));
+      line.setAttribute('x2', sx(X[i]));
+      line.setAttribute('y1', sy(Y[i]));
+      line.setAttribute('y2', sy(predict(X[i])));
+    });
+    probe.setAttribute('cx', sx(PROBE_X));
+    probe.setAttribute('cy', sy(predict(PROBE_X)));
+    probeGuide.setAttribute('x1', sx(PROBE_X));
+    probeGuide.setAttribute('x2', sx(PROBE_X));
+    probeGuide.setAttribute('y1', box.bottom);
+    probeGuide.setAttribute('y2', sy(predict(PROBE_X)));
+
+    show(model, state.step >= 2);
+    show(probe, state.step === 2);
+    show(probeGuide, state.step === 2);
+    show(errGroup, state.step >= 3);
+
+    document.querySelectorAll('.w-val').forEach((n) => (n.textContent = fmt(state.w)));
+    document.querySelectorAll('.b-val').forEach((n) => (n.textContent = fmt(state.b, 0)));
+    document.getElementById('w').value = state.w;
+    document.getElementById('b').value = state.b;
+    document.getElementById('probe-out').textContent = `${fmt(predict(PROBE_X), 0)}달러`;
+    const errs = X.map((x, i) => predict(x) - Y[i]);
+    document.getElementById('mse-sum').textContent = `(${errs.map((e) => `${fmt(e, 0)}²`).join(' + ')}) ÷ ${X.length}`;
+    document.getElementById('mse-out').textContent = fmt(mse(), 0);
+    document.getElementById('mse-out-4').textContent = fmt(mse(), 0);
+    document.getElementById('iter').textContent = state.iter;
+    document.getElementById('play').textContent = state.playing ? '멈춤' : '재생';
+  }
+
+  function goTo(step) {
+    state.step = Math.min(4, Math.max(1, step));
+    if (state.step === 4 && state.iter === 0) Object.assign(state, START);
+    stop();
+    for (const s of document.querySelectorAll('section[data-for]')) s.hidden = Number(s.dataset.for) !== state.step;
+    document.querySelectorAll('[data-step]').forEach((b) => b.setAttribute('aria-current', Number(b.dataset.step) === state.step ? 'step' : 'false'));
+    // The step lives in the URL so a review tool (and a bookmark) can return to the same screen.
+    if (location.hash !== `#step=${state.step}`) history.replaceState(null, '', `#step=${state.step}`);
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    render();
+  }
+
+  function iterate() {
+    let gw = 0;
+    let gb = 0;
+    X.forEach((x, i) => {
+      const e = predict(x) - Y[i];
+      gw += (2 * e * x) / X.length;
+      gb += (2 * e) / X.length;
+    });
+    state.w -= RATE_W * gw;
+    state.b -= RATE_B * gb;
+    state.iter++;
+  }
+
+  let timer = 0;
+  function play() {
+    if (reduced) {
+      while (state.iter < 60) iterate();
+      return render();
+    }
+    state.playing = true;
+    timer = setInterval(() => {
+      iterate();
+      if (state.iter >= 60) stop();
+      render();
+    }, 120);
+    render();
+  }
+  function stop() {
+    clearInterval(timer);
+    state.playing = false;
+  }
+
+  document.getElementById('prev').addEventListener('click', () => goTo(state.step - 1));
+  document.getElementById('next').addEventListener('click', () => goTo(state.step + 1));
+  document.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => goTo(Number(b.dataset.step))));
+  document.getElementById('w').addEventListener('input', (e) => { state.w = Number(e.target.value); render(); });
+  document.getElementById('b').addEventListener('input', (e) => { state.b = Number(e.target.value); render(); });
+  document.getElementById('play').addEventListener('click', () => (state.playing ? (stop(), render()) : play()));
+  document.getElementById('step1').addEventListener('click', () => { stop(); iterate(); render(); });
+  document.getElementById('reset').addEventListener('click', () => { stop(); Object.assign(state, START, { iter: 0 }); render(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest('input, textarea, select')) return;
+    if (e.key === 'ArrowRight') goTo(state.step + 1);
+    if (e.key === 'ArrowLeft') goTo(state.step - 1);
+    if (e.key === ' ' && state.step === 4) {
+      e.preventDefault();
+      state.playing ? (stop(), render()) : play();
+    }
+  });
+  window.addEventListener('hashchange', () => {
+    const n = Number(new URLSearchParams(location.hash.slice(1)).get('step'));
+    if (n && n !== state.step) goTo(n);
+  });
+
+  goTo(Number(new URLSearchParams(location.hash.slice(1)).get('step')) || 1);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkBridge 서재 뷰어</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f2f2f7; --fg: #1c1c1e; --muted: #636366; --card: #fff; --line: #d1d1d6; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1c1c1e; --fg: #f2f2f7; --muted: #aeaeb2; --card: #2c2c2e; --line: #48484a; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 -apple-system, system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--card); position: sticky; top: 0; z-index: 1; }
+  header h1 { font-size: 15px; margin: 0; }
+  .muted { color: var(--muted); }
+  button, select { font: inherit; min-height: 32px; }
+  #stage { padding: 16px; }
+  #frameBox { position: relative; overflow: hidden; margin: 0 auto; box-shadow: 0 1px 8px rgba(0,0,0,.2); background: #fff; }
+  iframe { border: 0; transform-origin: 0 0; position: absolute; left: 0; top: 0; display: block; }
+  ul { padding-left: 20px; }
+  main.list { max-width: 900px; margin: 0 auto; padding: 16px; }
+  code { font-size: 12px; }
+</style>
+</head>
+<body>
+<header id="head"><h1>서재 뷰어</h1></header>
+<div id="body"></div>
+<script>
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('review');
+  // Follow mode jumps to whichever review is being written right now (another page, a rotated iPad, a new version).
+  const follow = params.has('follow');
+  // meta lets the viewer open a review the iPad has not written in yet (it is not on the server).
+  const followUrl = (rid, state, meta) => {
+    const q = new URLSearchParams({ follow: '1', review: rid });
+    if (state) q.set('state', state);
+    if (meta) {
+      q.set('page', meta.page);
+      q.set('v', meta.contentVersion);
+      q.set('w', meta.viewport.width);
+      q.set('h', meta.viewport.height);
+    }
+    return `?${q}`;
+  };
+  const metaOf = (d) => ({ page: d.page, contentVersion: d.contentVersion, viewport: d.viewport });
+  const head = document.getElementById('head');
+  const body = document.getElementById('body');
+  const el = (tag, props = {}, ...kids) => {
+    const n = Object.assign(document.createElement(tag), props);
+    n.append(...kids);
+    return n;
+  };
+
+  if (!id && follow) {
+    // Start where the iPad is now; otherwise at the most recently written review.
+    const here = await (await fetch('/__pr/api/presence')).json();
+    if (here) return location.replace(followUrl(here.review, here.state, here.meta));
+    const list = await (await fetch('/__pr/api/reviews')).json();
+    if (list.length) return location.replace(followUrl(list[0].id));
+    head.append(el('a', { href: '?', textContent: '목록' }), el('span', { className: 'muted', textContent: '따라가기 · iPad에서 문서를 열면 여기에 표시됩니다' }));
+    const events = new EventSource('/__pr/events');
+    events.addEventListener('presence', (ev) => {
+      const d = JSON.parse(ev.data);
+      location.replace(followUrl(d.review, d.state, d.meta));
+    });
+    events.addEventListener('review', (ev) => {
+      const d = JSON.parse(ev.data);
+      location.replace(followUrl(d.id, d.added?.at(-1)?.state, metaOf(d)));
+    });
+    return;
+  }
+
+  if (!id) {
+    head.append(el('a', { href: '?follow=1', textContent: '따라가기 (지금 쓰는 리뷰를 자동으로 표시)' }));
+    let main = null;
+    async function renderList() {
+      const list = await (await fetch('/__pr/api/reviews')).json();
+      const next = listView(list);
+      if (main) main.replaceWith(next);
+      else body.append(next);
+      main = next;
+    }
+    // New reviews and stroke counts show up without reloading the page.
+    let timer = 0;
+    new EventSource('/__pr/events').addEventListener('review', () => {
+      clearTimeout(timer);
+      timer = setTimeout(renderList, 300);
+    });
+    await renderList();
+    return;
+  }
+
+  function deviceName(ua) {
+    if (/iPad/.test(ua)) return 'iPad';
+    if (/Macintosh/.test(ua)) return 'Mac';
+    return ua.slice(0, 40) || '알 수 없음';
+  }
+
+  function listView(list) {
+    const main = el('main', { className: 'list' });
+    const byPage = new Map();
+    for (const r of list) byPage.set(r.page, [...(byPage.get(r.page) ?? []), r]);
+    if (!list.length) main.append(el('p', { textContent: '아직 리뷰가 없습니다. 서버 주소로 HTML을 열고 필기하면 생깁니다.' }));
+    for (const [page, reviews] of byPage) {
+      main.append(el('h2', { textContent: page, style: 'font-size:16px' }));
+      const ul = el('ul');
+      for (const r of reviews) {
+        const a = el('a', { href: `?review=${r.id}`, textContent: `${r.viewport.width}×${r.viewport.height} · ${r.strokes}획` });
+        ul.append(el('li', {}, a, el('span', { className: 'muted', textContent: ` · 버전 ${r.contentVersion.slice(0, 8)} · ${new Date(r.updatedAt).toLocaleString()} · ${deviceName(r.device)}` })));
+      }
+      main.append(ul);
+    }
+    return main;
+  }
+
+  const res = await fetch(`/__pr/api/reviews/${encodeURIComponent(id)}`);
+  let review;
+  if (res.ok) review = await res.json();
+  else if (res.status === 404 && params.has('page') && params.has('v')) {
+    review = {
+      id, page: params.get('page'), contentVersion: params.get('v'),
+      viewport: { width: Number(params.get('w')), height: Number(params.get('h')) }, strokes: [], device: '아직 필기 없음',
+    };
+  } else {
+    body.append(el('p', { textContent: `리뷰를 찾을 수 없습니다 (${res.status}).`, style: 'padding:16px' }));
+    return;
+  }
+  const { width, height } = review.viewport;
+  const info = el('span', { className: 'muted' });
+  const scaleSel = el('select');
+  for (const [v, label] of [['fit', '창에 맞춤'], ['1', '100%']]) scaleSel.append(el('option', { value: v, textContent: label }));
+  const exportBtn = el('button', { type: 'button', textContent: '내보내기' });
+  const exportOut = el('span', { className: 'muted' });
+  const followLink = follow
+    ? el('a', { href: `?review=${encodeURIComponent(id)}`, textContent: '따라가기 끄기' })
+    : el('a', { href: followUrl(id), textContent: '따라가기' });
+  head.append(el('a', { href: '?', textContent: '목록' }), followLink, el('strong', { textContent: review.page }), info, scaleSel, exportBtn, exportOut);
+  info.textContent = `${width}×${height} · 버전 ${review.contentVersion.slice(0, 8)} · ${review.strokes.length}획 · ${review.device.slice(0, 50)}`;
+
+  const stage = el('div', { id: 'stage' });
+  const box = el('div', { id: 'frameBox' });
+  const frame = el('iframe', { title: review.page });
+  // The iframe is the review's viewport, so media queries, vw and vh match the reviewing device.
+  let frameWidth = width;
+  frame.style.width = `${frameWidth}px`;
+  frame.style.height = `${height}px`;
+  frame.src = `/__pr/snap/${review.contentVersion}/${review.page.split('/').map(encodeURIComponent).join('/')}?review=${encodeURIComponent(id)}`;
+  box.append(frame);
+  stage.append(box);
+  body.append(stage);
+
+  // Strokes drawn on a dynamic page carry its URL hash (e.g. #step=3); jump the frame there to see them.
+  const counts = new Map();
+  for (const s of review.strokes) counts.set(s.state ?? '', (counts.get(s.state ?? '') ?? 0) + 1);
+  let stateSel = null;
+  let lastRemoteState = null; // a hash this viewer was told to show; not sent back as a page turn
+  if (counts.size > 1 || !counts.has('')) {
+    stateSel = el('select', { title: '필기한 화면 상태' });
+    for (const [state, n] of [...counts].sort()) stateSel.append(el('option', { value: state, textContent: `${state || '기본 화면'} · ${n}획` }));
+    stateSel.addEventListener('change', () => {
+      frame.contentWindow.location.hash = stateSel.value;
+    });
+    // The page may set its own default hash while loading, so jump after load to the first state that has ink.
+    // A follow switch passes the state that was just written in.
+    if (params.has('state') && counts.has(params.get('state'))) stateSel.value = params.get('state');
+    frame.addEventListener('load', () => {
+      lastRemoteState = stateSel.value;
+      frame.contentWindow.location.hash = stateSel.value;
+    }, { once: true });
+    head.insertBefore(stateSel, scaleSel);
+  }
+
+  function layout() {
+    const avail = stage.clientWidth - 32;
+    const scale = scaleSel.value === 'fit' ? Math.min(1, avail / frameWidth) : 1;
+    // transform scales the picture only; the layout inside keeps the review's viewport.
+    frame.style.transform = `scale(${scale})`;
+    box.style.width = `${frameWidth * scale}px`;
+    box.style.height = `${height * scale}px`;
+  }
+  scaleSel.addEventListener('change', layout);
+  window.addEventListener('resize', layout);
+  layout();
+
+  // A classic scrollbar inside the frame narrows clientWidth; widen the frame by the difference once.
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || e.source !== frame.contentWindow || e.data?.type !== 'pr-size') return;
+    const diff = width - e.data.clientWidth;
+    if (diff > 0 && diff < 40 && frameWidth === width) {
+      frameWidth = width + diff;
+      frame.style.width = `${frameWidth}px`;
+      layout();
+    }
+  });
+
+  const showState = (state) => {
+    if (state === undefined || !frame.contentWindow || frame.contentWindow.location.hash === state) return;
+    lastRemoteState = state;
+    frame.contentWindow.location.hash = state;
+    if (stateSel && [...stateSel.options].some((o) => o.value === state)) stateSel.value = state;
+  };
+
+  if (follow) {
+    // Events arrive from the overlay inside the frame, which already holds a server connection.
+    window.addEventListener('message', (e) => {
+      if (e.origin !== location.origin || e.source !== frame.contentWindow || e.data?.type !== 'pr-event') return;
+      const d = e.data.data;
+      const name = e.data.name;
+      if (name === 'presence') {
+        if (d.review !== id) return location.replace(followUrl(d.review, d.state, d.meta));
+        showState(d.state);
+      } else if (name === 'review') {
+        if (d.id !== id) return location.replace(followUrl(d.id, d.added?.at(-1)?.state, metaOf(d)));
+        showState(d.added?.at(-1)?.state);
+      } else if (name === 'live') {
+        if (d.review !== id) return d.meta && location.replace(followUrl(d.review, d.stroke.state, d.meta));
+        showState(d.stroke.state);
+      }
+    });
+  }
+
+  // Sync: a page turn made here (arrow keys, step buttons inside the frame) is sent to the iPad.
+  const clientId = `c_${crypto.getRandomValues(new Uint32Array(2)).join('')}`;
+  const syncBox = el('input', { type: 'checkbox' });
+  try {
+    syncBox.checked = localStorage.getItem('pr:sync') === '1';
+  } catch {
+    // Off by default.
+  }
+  syncBox.addEventListener('change', () => {
+    try {
+      localStorage.setItem('pr:sync', syncBox.checked ? '1' : '0');
+    } catch {
+      // Not remembered.
+    }
+  });
+  head.insertBefore(el('label', { title: '맥에서 페이지를 넘기면 iPad도 같은 페이지로 넘어갑니다' }, syncBox, ' 페이지 동기화'), scaleSel);
+  frame.addEventListener('load', () => {
+    frame.contentWindow.addEventListener('hashchange', () => {
+      const hash = frame.contentWindow.location.hash;
+      if (!syncBox.checked || hash === lastRemoteState) return;
+      lastRemoteState = hash;
+      fetch('/__pr/api/navigate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId, page: review.page, state: hash }) });
+    });
+  });
+
+  exportBtn.addEventListener('click', async () => {
+    exportOut.textContent = '내보내는 중…';
+    const r = await fetch(`/__pr/api/reviews/${encodeURIComponent(id)}/export`, { method: 'POST' });
+    const out = await r.json();
+    exportOut.textContent = r.ok ? `${out.dir} (${out.files.join(', ')})` : `실패: ${out.error}`;
+  });
+})();
+</script>
+</body>
+</html>

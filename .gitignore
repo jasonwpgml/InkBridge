@@ -1,0 +1,17 @@
+.DS_Store
+build/
+*.xcuserstate
+xcuserdata/
+.build/
+*.xcuserdatad/
+node_modules/
+
+# Library server data and generated output (holds the access token and notes)
+.pencil-review/
+library/bin/
+library/examples/converted/
+imported/
+
+# Sidecar build output and saved notes
+sidecar/*.app
+*.inkbridge

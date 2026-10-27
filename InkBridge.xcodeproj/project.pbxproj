@@ -1,0 +1,452 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0FBE5EFA87F4698C33CB322C /* DocumentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77576FAD8D6DA0D1283A8BAB /* DocumentViews.swift */; };
+		35FCD7FB37A27AAB77487DE4 /* PadModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D887C301915A6988E14D055E /* PadModel.swift */; };
+		4AAE725DB3B8AE585139EF93 /* WritingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D73A7EFDE8C756576ED9A20 /* WritingToolbar.swift */; };
+		4C0C9FCCCE8501D1A9C0145D /* WritingTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011238E84831A83DB155EE7 /* WritingTools.swift */; };
+		4CEE2FCB3980DC4888CDA8BF /* InkGlass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 246B51AEA198D146C44C9776 /* InkGlass.swift */; };
+		4F655D95FA9B66E098C3F34E /* WebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DEF2D8CA483C56B4B9CED19 /* WebViewController.swift */; };
+		5F3865FB07CB8983FEC6244F /* ScreenStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA30D0435054D0808A088B88 /* ScreenStreamer.swift */; };
+		675A465024830C4F5E3C6A68 /* InkOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79883BC0343D2C74557AED5 /* InkOverlay.swift */; };
+		67DF52F9A5ABE91AB40A8A43 /* CanvasStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A94DF822989394729E191B /* CanvasStage.swift */; };
+		7F1E7F46C32CAFBBBA89ED20 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB08A34140B5460FFEC11B6 /* LibraryView.swift */; };
+		808C9251C7C28B9650CCA054 /* PeerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07AFDE835F249CE6EF50B410 /* PeerLink.swift */; };
+		94AEDCC4E46C70BAF3994DB8 /* PeerLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07AFDE835F249CE6EF50B410 /* PeerLink.swift */; };
+		AC2895BE21C28544691E5D62 /* MacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A409DA623C68301A4522DB8A /* MacApp.swift */; };
+		B2A3119703BB048B99926DA3 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776E9CDF74D433E9D969A585 /* Protocol.swift */; };
+		C2516DCE4519EA6203F0BEF8 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73605013578A0F0A14C27CDF /* HomeView.swift */; };
+		DA649FEC29B34FBEDC28DB6E /* PadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F284CDE64E67CC3A8F234C1A /* PadApp.swift */; };
+		EACA0EEDF9CDFDF07C8437C4 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776E9CDF74D433E9D969A585 /* Protocol.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		07AFDE835F249CE6EF50B410 /* PeerLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerLink.swift; sourceTree = "<group>"; };
+		0E90A829D58D4C663B43C5D3 /* InkBridgeMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InkBridgeMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		246B51AEA198D146C44C9776 /* InkGlass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkGlass.swift; sourceTree = "<group>"; };
+		2AC307B9E50A43B014EAD2D9 /* InkBridgePad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = InkBridgePad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A773FF6AAF9A718141ACB30 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5D73A7EFDE8C756576ED9A20 /* WritingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WritingToolbar.swift; sourceTree = "<group>"; };
+		73605013578A0F0A14C27CDF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		77576FAD8D6DA0D1283A8BAB /* DocumentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViews.swift; sourceTree = "<group>"; };
+		776E9CDF74D433E9D969A585 /* Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
+		7EB08A34140B5460FFEC11B6 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		8DEF2D8CA483C56B4B9CED19 /* WebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewController.swift; sourceTree = "<group>"; };
+		A011238E84831A83DB155EE7 /* WritingTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WritingTools.swift; sourceTree = "<group>"; };
+		A1A94DF822989394729E191B /* CanvasStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasStage.swift; sourceTree = "<group>"; };
+		A409DA623C68301A4522DB8A /* MacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacApp.swift; sourceTree = "<group>"; };
+		B79883BC0343D2C74557AED5 /* InkOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkOverlay.swift; sourceTree = "<group>"; };
+		CA30D0435054D0808A088B88 /* ScreenStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenStreamer.swift; sourceTree = "<group>"; };
+		D3DB52AB94336F15F2FFEB40 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D887C301915A6988E14D055E /* PadModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadModel.swift; sourceTree = "<group>"; };
+		F284CDE64E67CC3A8F234C1A /* PadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PadApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1EA07CF5E10423E65502C80E /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				07AFDE835F249CE6EF50B410 /* PeerLink.swift */,
+				776E9CDF74D433E9D969A585 /* Protocol.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		7BF30232EFA268A211659A1E = {
+			isa = PBXGroup;
+			children = (
+				EB0FA6E21AC7DE729B0D8D4F /* iPad */,
+				FAB95E4B51E44B7B5052338D /* Mac */,
+				1EA07CF5E10423E65502C80E /* Shared */,
+				AA46E3C02782D6509E535A03 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA46E3C02782D6509E535A03 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0E90A829D58D4C663B43C5D3 /* InkBridgeMac.app */,
+				2AC307B9E50A43B014EAD2D9 /* InkBridgePad.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EB0FA6E21AC7DE729B0D8D4F /* iPad */ = {
+			isa = PBXGroup;
+			children = (
+				A1A94DF822989394729E191B /* CanvasStage.swift */,
+				77576FAD8D6DA0D1283A8BAB /* DocumentViews.swift */,
+				73605013578A0F0A14C27CDF /* HomeView.swift */,
+				4A773FF6AAF9A718141ACB30 /* Info.plist */,
+				246B51AEA198D146C44C9776 /* InkGlass.swift */,
+				7EB08A34140B5460FFEC11B6 /* LibraryView.swift */,
+				F284CDE64E67CC3A8F234C1A /* PadApp.swift */,
+				D887C301915A6988E14D055E /* PadModel.swift */,
+				8DEF2D8CA483C56B4B9CED19 /* WebViewController.swift */,
+				5D73A7EFDE8C756576ED9A20 /* WritingToolbar.swift */,
+				A011238E84831A83DB155EE7 /* WritingTools.swift */,
+			);
+			path = iPad;
+			sourceTree = "<group>";
+		};
+		FAB95E4B51E44B7B5052338D /* Mac */ = {
+			isa = PBXGroup;
+			children = (
+				D3DB52AB94336F15F2FFEB40 /* Info.plist */,
+				B79883BC0343D2C74557AED5 /* InkOverlay.swift */,
+				A409DA623C68301A4522DB8A /* MacApp.swift */,
+				CA30D0435054D0808A088B88 /* ScreenStreamer.swift */,
+			);
+			path = Mac;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9D74DB599AA8E5654BFD656C /* InkBridgePad */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EFDE1CDD975CF54CBDD64243 /* Build configuration list for PBXNativeTarget "InkBridgePad" */;
+			buildPhases = (
+				F15EF4A1258AC3209862BAFC /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = InkBridgePad;
+			packageProductDependencies = (
+			);
+			productName = InkBridgePad;
+			productReference = 2AC307B9E50A43B014EAD2D9 /* InkBridgePad.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AAC84D5FE47300724D94404D /* InkBridgeMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5AC695ABF9BFFC0D0AC7BCE /* Build configuration list for PBXNativeTarget "InkBridgeMac" */;
+			buildPhases = (
+				5A2FAA47F77BA72D26BC276D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = InkBridgeMac;
+			packageProductDependencies = (
+			);
+			productName = InkBridgeMac;
+			productReference = 0E90A829D58D4C663B43C5D3 /* InkBridgeMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4BABBD7C03CD461AB6D17EC4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					9D74DB599AA8E5654BFD656C = {
+						DevelopmentTeam = CU8W346P98;
+						ProvisioningStyle = Automatic;
+					};
+					AAC84D5FE47300724D94404D = {
+						DevelopmentTeam = CU8W346P98;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FF8853B44AFECBF5E7D22FB4 /* Build configuration list for PBXProject "InkBridge" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7BF30232EFA268A211659A1E;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AA46E3C02782D6509E535A03 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AAC84D5FE47300724D94404D /* InkBridgeMac */,
+				9D74DB599AA8E5654BFD656C /* InkBridgePad */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5A2FAA47F77BA72D26BC276D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				675A465024830C4F5E3C6A68 /* InkOverlay.swift in Sources */,
+				AC2895BE21C28544691E5D62 /* MacApp.swift in Sources */,
+				808C9251C7C28B9650CCA054 /* PeerLink.swift in Sources */,
+				EACA0EEDF9CDFDF07C8437C4 /* Protocol.swift in Sources */,
+				5F3865FB07CB8983FEC6244F /* ScreenStreamer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F15EF4A1258AC3209862BAFC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67DF52F9A5ABE91AB40A8A43 /* CanvasStage.swift in Sources */,
+				0FBE5EFA87F4698C33CB322C /* DocumentViews.swift in Sources */,
+				C2516DCE4519EA6203F0BEF8 /* HomeView.swift in Sources */,
+				4CEE2FCB3980DC4888CDA8BF /* InkGlass.swift in Sources */,
+				7F1E7F46C32CAFBBBA89ED20 /* LibraryView.swift in Sources */,
+				DA649FEC29B34FBEDC28DB6E /* PadApp.swift in Sources */,
+				35FCD7FB37A27AAB77487DE4 /* PadModel.swift in Sources */,
+				94AEDCC4E46C70BAF3994DB8 /* PeerLink.swift in Sources */,
+				B2A3119703BB048B99926DA3 /* Protocol.swift in Sources */,
+				4F655D95FA9B66E098C3F34E /* WebViewController.swift in Sources */,
+				4AAE725DB3B8AE585139EF93 /* WritingToolbar.swift in Sources */,
+				4C0C9FCCCE8501D1A9C0145D /* WritingTools.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5FA6C12AE6FF4680C9F79BED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = iPad/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.inkbridge.stream.pad;
+				PRODUCT_NAME = "InkBridge Pad";
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		8EE2BFEAB5D76B4B3D102C55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = Mac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.inkbridge.stream.mac;
+				PRODUCT_NAME = "InkBridge Mac";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		9935B8E9DC9C549921092C9E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = Mac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.inkbridge.stream.mac;
+				PRODUCT_NAME = "InkBridge Mac";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E08D8A0B9DF53AAEA0B2C29E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = CU8W346P98;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		ED7A816921723C78A41009EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = CU8W346P98;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F4FC449660542C84FCB95244 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = iPad/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.inkbridge.stream.pad;
+				PRODUCT_NAME = "InkBridge Pad";
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D5AC695ABF9BFFC0D0AC7BCE /* Build configuration list for PBXNativeTarget "InkBridgeMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8EE2BFEAB5D76B4B3D102C55 /* Debug */,
+				9935B8E9DC9C549921092C9E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EFDE1CDD975CF54CBDD64243 /* Build configuration list for PBXNativeTarget "InkBridgePad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4FC449660542C84FCB95244 /* Debug */,
+				5FA6C12AE6FF4680C9F79BED /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF8853B44AFECBF5E7D22FB4 /* Build configuration list for PBXProject "InkBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E08D8A0B9DF53AAEA0B2C29E /* Debug */,
+				ED7A816921723C78A41009EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4BABBD7C03CD461AB6D17EC4 /* Project object */;
+}

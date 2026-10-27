@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>반응형 예제</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>반응형 예제 문서</h1>
+  <nav><a href="#one">첫 절</a> · <a href="#two">둘째 절</a> · <a href="https://example.com/">외부 링크</a></nav>
+</header>
+<main>
+  <section id="one">
+    <h2>첫 절 — 너비에 따라 배치가 바뀝니다</h2>
+    <p>이 문서는 1000px 이상에서 두 단, 그보다 좁으면 한 단으로 배치됩니다. 제목 글자 크기는 viewport 너비(vw)에 따라 달라집니다. 맥 창 너비와 iPad 너비가 다르면 같은 문장이 다른 위치에 놓이므로, 필기는 iPad의 viewport별 리뷰로 저장하고 맥에서는 같은 크기의 iframe으로 봅니다.</p>
+    <p>링크 위에 펜으로 동그라미를 그렸을 때 페이지가 이동하지 않아야 합니다. <a href="#two">이 링크</a>와 <button type="button" onclick="this.textContent = '눌림 ' + (+(this.dataset.n = (+this.dataset.n || 0) + 1))">이 버튼</button>으로 확인합니다.</p>
+  </section>
+  <aside>
+    <h3>옆 단</h3>
+    <p>두 단 배치에서는 오른쪽, 한 단 배치에서는 첫 절 아래에 옵니다.</p>
+  </aside>
+  <section id="two">
+    <h2>둘째 절 — 긴 문서</h2>
+  </section>
+</main>
+<script>
+  // Long content so the canvas band has to move while scrolling.
+  const two = document.getElementById('two');
+  for (let i = 1; i <= 60; i++) {
+    const p = document.createElement('p');
+    p.textContent = `${i}번째 문단. 스크롤해도 필기는 문서의 같은 위치에 남아야 하며, 화면에서 먼 구간의 획은 다시 가까워질 때 그려집니다.`;
+    two.append(p);
+  }
+</script>
+</body>
+</html>

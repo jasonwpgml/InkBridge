@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkBridge 서재 입력 실험</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #1c1c1e; --muted: #636366; --line: #d1d1d6; --pad: #f2f2f7; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1c1c1e; --fg: #f2f2f7; --muted: #aeaeb2; --line: #48484a; --pad: #2c2c2e; } }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  h2 { font-size: 16px; margin: 20px 0 6px; }
+  .muted { color: var(--muted); }
+  #pad { position: relative; height: 420px; border: 1px solid var(--line); border-radius: 12px; background: var(--pad); overflow: hidden; }
+  #pad canvas { position: absolute; inset: 0; pointer-events: none; }
+  #pad .targets { position: absolute; left: 24px; top: 24px; display: flex; gap: 24px; align-items: center; }
+  #pad a, #pad button { font-size: 18px; padding: 14px 18px; }
+  #pad p { position: absolute; left: 24px; right: 24px; bottom: 16px; margin: 0; }
+  label { display: block; min-height: 32px; }
+  input[type=checkbox] { width: 20px; height: 20px; vertical-align: -4px; }
+  table { border-collapse: collapse; font: 11px/1.3 ui-monospace, Menlo, monospace; width: 100%; }
+  td, th { border-bottom: 1px solid var(--line); padding: 2px 4px; text-align: left; white-space: nowrap; }
+  #logBox { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  pre { white-space: pre-wrap; font: 12px/1.4 ui-monospace, Menlo, monospace; margin: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button.main { min-height: 44px; padding: 0 16px; font: inherit; }
+  textarea { width: 100%; min-height: 60px; font: inherit; box-sizing: border-box; }
+  .spacer { height: 900px; border-left: 4px dashed var(--line); margin: 16px 0; padding-left: 12px; }
+</style>
+</head>
+<body>
+<h1>입력 실험 (/__pen-test)</h1>
+<p class="muted">iPad Safari와 맥 브라우저(Sidecar 포함)에서 Pencil·손가락·손바닥 입력이 어떻게 들어오는지 기록합니다. 결과는 맥의 <code>.pencil-review/pen-tests/</code>에 저장되어 오버레이 입력 방식을 정하는 데 씁니다.</p>
+
+<h2>환경</h2>
+<pre id="env"></pre>
+
+<h2>설정</h2>
+<label><input type="checkbox" id="optTouch" checked> 펜 touchstart/touchmove에서 preventDefault (스크롤 막기)</label>
+<label><input type="checkbox" id="optClick" checked> 펜 획 직후 click·mousedown 차단</label>
+<label><input type="checkbox" id="optPalm" checked> 펜이 닿아 있는 동안 손가락 touchmove 차단 (손바닥 스크롤)</label>
+<label><input type="checkbox" id="optMouse"> 마우스로 그리기 (맥·Sidecar에서 펜이 mouse로 들어올 때)</label>
+
+<h2>그리기 영역</h2>
+<div id="pad">
+  <canvas id="ink"></canvas>
+  <div class="targets">
+    <a href="#link-clicked" id="link">링크</a>
+    <button type="button" id="btn">버튼</button>
+  </div>
+  <p>링크·버튼 위에 펜으로 동그라미를 그려 보세요. 이동하거나 눌리면 아래 카운터가 올라갑니다. 손가락으로는 이 영역에서도 스크롤·확대가 되어야 합니다.</p>
+</div>
+
+<h2>요약</h2>
+<pre id="summary"></pre>
+
+<h2>직접 확인</h2>
+<label><input type="checkbox" data-check="penDraws"> 펜으로 선이 그려진다</label>
+<label><input type="checkbox" data-check="fingerScrolls"> 손가락으로 페이지가 스크롤·확대된다</label>
+<label><input type="checkbox" data-check="noPalmScroll"> 펜으로 쓰는 중 손바닥이 닿아도 화면이 움직이지 않는다</label>
+<label><input type="checkbox" data-check="noLinkNav"> 링크·버튼 위 필기 시 이동·눌림이 없다</label>
+<label><input type="checkbox" data-check="zoomCoords"> 핀치 확대 후에도 선이 펜 끝 위치에 그려진다</label>
+<label><input type="checkbox" data-check="rotateCoords"> 회전 후에도 선이 펜 끝 위치에 그려진다</label>
+<textarea id="note" placeholder="메모 (기기, Pencil 모델, 이상한 점)"></textarea>
+<div class="row"><button class="main" id="save">결과 저장</button><button class="main" id="reset">초기화</button><span id="saved" class="muted"></span></div>
+
+<h2>이벤트 기록 (최근 200개)</h2>
+<div id="logBox"><table><thead><tr><th>ms</th><th>type</th><th>kind</th><th>id</th><th>pressure</th><th>tilt/alt/az</th><th>coal/pred</th><th>client</th><th>page</th><th>vv scale/offset</th><th>prevented</th></tr></thead><tbody id="log"></tbody></table></div>
+
+<div class="spacer">스크롤 확인용 여백. 이 아래에도 펜으로 그리기 영역 밖을 그어 보고, 페이지가 펜으로 스크롤되는지 확인하세요.</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const pad = $('pad');
+  const canvas = $('ink');
+  const ctx = canvas.getContext('2d');
+  const t0 = performance.now();
+  const events = [];
+  const strokes = [];
+  const counters = { linkClicks: 0, buttonClicks: 0, pointercancel: 0, scrollDuringPen: 0, penPointerEvents: 0, penCoalescedPoints: 0, touchStylus: 0, touchDirect: 0, mouseEvents: 0 };
+  let active = null;
+  let lastPenEnd = -Infinity;
+  let rateWindow = [];
+
+  function env() {
+    const mm = (q) => matchMedia(q).matches;
+    return {
+      userAgent: navigator.userAgent,
+      secureContext: window.isSecureContext,
+      pointerEvents: 'PointerEvent' in window,
+      getCoalescedEvents: 'PointerEvent' in window && 'getCoalescedEvents' in PointerEvent.prototype,
+      getPredictedEvents: 'PointerEvent' in window && 'getPredictedEvents' in PointerEvent.prototype,
+      touchEvents: 'ontouchstart' in window,
+      maxTouchPoints: navigator.maxTouchPoints,
+      devicePixelRatio: window.devicePixelRatio,
+      innerSize: [innerWidth, innerHeight],
+      clientWidth: document.documentElement.clientWidth,
+      visualViewport: window.visualViewport ? [visualViewport.width, visualViewport.height, visualViewport.scale] : null,
+      media: { pointerFine: mm('(pointer: fine)'), pointerCoarse: mm('(pointer: coarse)'), anyPointerFine: mm('(any-pointer: fine)'), hover: mm('(hover: hover)') },
+      caretRangeFromPoint: typeof document.caretRangeFromPoint === 'function',
+    };
+  }
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = pad.clientWidth * dpr;
+    canvas.height = pad.clientHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const s of strokes) drawAll(s);
+  }
+
+  function padPoint(e) {
+    const r = pad.getBoundingClientRect();
+    // Same conversion the overlay uses: clientX + scrollX, no visualViewport scaling. The log keeps pageX for comparison.
+    return [e.clientX - r.left, e.clientY - r.top, e.pressure || 0];
+  }
+
+  function drawSeg(a, b, w) {
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#e5484d';
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(a[0], a[1]);
+    ctx.lineTo(b[0], b[1]);
+    ctx.stroke();
+  }
+
+  function drawAll(s) {
+    for (let i = 1; i < s.points.length; i++) drawSeg(s.points[i - 1], s.points[i], 1 + s.points[i][2] * 4);
+  }
+
+  function vv() {
+    const v = window.visualViewport;
+    return v ? `${v.scale.toFixed(2)} ${v.offsetLeft.toFixed(0)},${v.offsetTop.toFixed(0)}` : '-';
+  }
+
+  function record(e, extra = {}) {
+    const row = {
+      ms: Math.round(performance.now() - t0),
+      type: e.type,
+      kind: e.pointerType ?? extra.kind ?? '',
+      id: e.pointerId ?? extra.id ?? '',
+      pressure: e.pressure !== undefined ? +e.pressure.toFixed(3) : extra.force ?? '',
+      tilt: e.pointerType ? `${e.tiltX ?? ''}/${e.tiltY ?? ''} ${e.altitudeAngle !== undefined ? e.altitudeAngle.toFixed(2) : ''}/${e.azimuthAngle !== undefined ? e.azimuthAngle.toFixed(2) : ''}` : (extra.tilt ?? ''),
+      coalesced: extra.coalesced ?? '',
+      client: e.clientX !== undefined ? `${e.clientX.toFixed(1)},${e.clientY.toFixed(1)}` : extra.client ?? '',
+      page: e.pageX !== undefined ? `${e.pageX.toFixed(1)},${e.pageY.toFixed(1)}` : extra.page ?? '',
+      vv: vv(),
+      prevented: extra.prevented ?? e.defaultPrevented,
+      inStroke: !!active,
+    };
+    events.push(row);
+    if (events.length > 2000) events.shift();
+    if (active && active.sequence.length < 40) active.sequence.push(`${row.type}:${row.kind}`);
+    queueRender();
+  }
+
+  let renderQueued = false;
+  function queueRender() {
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      const tbody = $('log');
+      tbody.replaceChildren(...events.slice(-200).reverse().map((r) => {
+        const tr = document.createElement('tr');
+        for (const k of ['ms', 'type', 'kind', 'id', 'pressure', 'tilt', 'coalesced', 'client', 'page', 'vv', 'prevented']) {
+          const td = document.createElement('td');
+          td.textContent = String(r[k]);
+          tr.append(td);
+        }
+        return tr;
+      }));
+      $('summary').textContent = JSON.stringify(summary(), null, 2);
+    });
+  }
+
+  function summary() {
+    const now = performance.now();
+    rateWindow = rateWindow.filter((t) => now - t < 1000);
+    return {
+      ...counters,
+      penMoveEventsLastSecond: rateWindow.length,
+      strokes: strokes.length,
+      lastStroke: strokes.length ? {
+        points: strokes.at(-1).points.length,
+        durationMs: Math.round(strokes.at(-1).duration),
+        pressureRange: strokes.at(-1).pressureRange,
+        firstEvents: strokes.at(-1).sequence,
+        cancelled: strokes.at(-1).cancelled,
+      } : null,
+    };
+  }
+
+  const wantsInk = (e) => e.pointerType === 'pen' || ($('optMouse').checked && e.pointerType === 'mouse');
+  const inPad = (e) => pad.contains(e.target);
+
+  window.addEventListener('pointerdown', (e) => {
+    record(e);
+    if (e.pointerType === 'pen') counters.penPointerEvents++;
+    if (!wantsInk(e) || active) return;
+    e.preventDefault();
+    e.stopPropagation();
+    active = { pointerId: e.pointerId, points: [padPoint(e)], start: performance.now(), sequence: [`pointerdown:${e.pointerType}`], scrollY: window.scrollY, scrollX: window.scrollX };
+  }, { capture: true, passive: false });
+
+  window.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'pen') counters.penPointerEvents++;
+    const list = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
+    const predicted = typeof e.getPredictedEvents === 'function' ? e.getPredictedEvents().length : '';
+    if (!active || e.pointerId !== active.pointerId) {
+      if (e.pointerType === 'pen') record(e, { coalesced: `${list.length}/${predicted}` });
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    rateWindow.push(performance.now());
+    counters.penCoalescedPoints += list.length || 1;
+    record(e, { coalesced: `${list.length}/${predicted}` });
+    for (const ev of list.length ? list : [e]) {
+      const p = padPoint(ev);
+      drawSeg(active.points.at(-1), p, 1 + p[2] * 4);
+      active.points.push(p);
+    }
+  }, { capture: true, passive: false });
+
+  function end(e) {
+    if (e.type === 'pointercancel') counters.pointercancel++;
+    record(e);
+    if (!active || e.pointerId !== active.pointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const pressures = active.points.map((p) => p[2]);
+    strokes.push({
+      points: active.points,
+      duration: performance.now() - active.start,
+      pressureRange: [Math.min(...pressures), Math.max(...pressures)].map((v) => +v.toFixed(3)),
+      sequence: active.sequence,
+      cancelled: e.type === 'pointercancel',
+      scrolled: [window.scrollX - active.scrollX, window.scrollY - active.scrollY],
+    });
+    active = null;
+    lastPenEnd = performance.now();
+  }
+  window.addEventListener('pointerup', end, { capture: true, passive: false });
+  window.addEventListener('pointercancel', end, { capture: true, passive: false });
+
+  function onTouch(e) {
+    const touches = [...e.changedTouches];
+    const stylus = touches.some((t) => t.touchType === 'stylus');
+    for (const t of touches) {
+      if (t.touchType === 'stylus') counters.touchStylus++;
+      else counters.touchDirect++;
+    }
+    let prevented = false;
+    if ((stylus && $('optTouch').checked) || (!stylus && active && $('optPalm').checked)) {
+      e.preventDefault();
+      prevented = true;
+    }
+    const t = touches[0];
+    record(e, {
+      kind: touches.map((x) => x.touchType ?? 'unknown').join('+'),
+      id: t?.identifier,
+      force: t?.force !== undefined ? +t.force.toFixed(3) : '',
+      tilt: t?.altitudeAngle !== undefined ? `alt ${t.altitudeAngle.toFixed(2)} az ${t.azimuthAngle?.toFixed(2)}` : '',
+      client: t ? `${t.clientX.toFixed(1)},${t.clientY.toFixed(1)}` : '',
+      page: t ? `${t.pageX.toFixed(1)},${t.pageY.toFixed(1)}` : '',
+      prevented,
+    });
+  }
+  for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) window.addEventListener(type, onTouch, { capture: true, passive: false });
+
+  for (const type of ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu']) {
+    window.addEventListener(type, (e) => {
+      counters.mouseEvents++;
+      let prevented = false;
+      if ($('optClick').checked && inPad(e) && (active || performance.now() - lastPenEnd < 500)) {
+        e.preventDefault();
+        e.stopPropagation();
+        prevented = true;
+      }
+      record(e, { prevented });
+    }, { capture: true, passive: false });
+  }
+
+  window.addEventListener('scroll', () => {
+    if (active) counters.scrollDuringPen++;
+  }, { passive: true });
+
+  $('link').addEventListener('click', () => counters.linkClicks++);
+  $('btn').addEventListener('click', () => counters.buttonClicks++);
+
+  $('reset').addEventListener('click', () => {
+    events.length = 0;
+    strokes.length = 0;
+    for (const k of Object.keys(counters)) counters[k] = 0;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (location.hash) history.replaceState(null, '', location.pathname);
+    queueRender();
+  });
+
+  $('save').addEventListener('click', async () => {
+    const checks = {};
+    for (const c of document.querySelectorAll('[data-check]')) checks[c.dataset.check] = c.checked;
+    const options = { touchPreventDefault: $('optTouch').checked, clickGuard: $('optClick').checked, palmGuard: $('optPalm').checked, mouseDraw: $('optMouse').checked };
+    const body = { env: env(), options, checks, note: $('note').value, summary: summary(), strokes: strokes.map(({ points, ...rest }) => ({ ...rest, points: points.length })), events: events.slice(-400), navigatedToLink: location.hash === '#link-clicked' };
+    try {
+      const res = await fetch('/__pr/api/pen-tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      $('saved').textContent = res.ok ? `저장됨: ${(await res.json()).saved}` : `저장 실패 (${res.status})`;
+    } catch (err) {
+      $('saved').textContent = `저장 실패: ${err.message}`;
+    }
+  });
+
+  $('env').textContent = JSON.stringify(env(), null, 2);
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    $('env').textContent = JSON.stringify(env(), null, 2);
+  });
+  resizeCanvas();
+  queueRender();
+})();
+</script>
+</body>
+</html>

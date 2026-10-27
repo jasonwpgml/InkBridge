@@ -1,0 +1,64 @@
+name: InkBridge
+options:
+  bundleIdPrefix: local.inkbridge
+  deploymentTarget:
+    macOS: '14.0'
+    iOS: '18.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: 1
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: CU8W346P98
+targets:
+  InkBridgeMac:
+    type: application
+    platform: macOS
+    sources: [Shared, Mac]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.inkbridge.stream.mac
+        PRODUCT_NAME: InkBridge Mac
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_IDENTITY: Apple Development
+    info:
+      path: Mac/Info.plist
+      properties:
+        CFBundleDisplayName: InkBridge Mac
+        NSLocalNetworkUsageDescription: 연결한 iPad로 맥 화면을 보내고 필기를 받습니다.
+        NSBonjourServices: [_inkbridge-v1._tcp, _inkbridge-v1._udp]
+        NSHighResolutionCapable: true
+  InkBridgePad:
+    type: application
+    platform: iOS
+    sources: [Shared, iPad]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.inkbridge.stream.pad
+        PRODUCT_NAME: InkBridge Pad
+        TARGETED_DEVICE_FAMILY: 2
+        SUPPORTS_MACCATALYST: NO
+    info:
+      path: iPad/Info.plist
+      properties:
+        CFBundleDisplayName: InkBridge Pad
+        CFBundleDevelopmentRegion: ko
+        NSLocalNetworkUsageDescription: 선택한 맥의 화면을 받고 Apple Pencil 필기를 맥에 표시하며, 맥의 Pencil Review 서버에서 문서를 엽니다.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSAllowsArbitraryLoadsInWebContent: true
+        NSBonjourServices: [_inkbridge-v1._tcp, _inkbridge-v1._udp]
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight, UIInterfaceOrientationPortraitUpsideDown]
+schemes:
+  InkBridgeMac:
+    build:
+      targets:
+        InkBridgeMac: all
+  InkBridgePad:
+    build:
+      targets:
+        InkBridgePad: all
