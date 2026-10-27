@@ -112,7 +112,7 @@ function glowLayer() {
 }
 
 function sheetLayer() {
-  return svg('<rect x="118" y="196" width="788" height="660" rx="96" fill="#ffffff"/>');
+  return svg('<rect width="1024" height="1024" fill="#ffffff"/>');
 }
 
 // Apple Pencil drawn along +x from its tip at the origin, then turned so it leans up and to the right.
@@ -155,7 +155,7 @@ const iconJson = {
       layers: [{ name: 'pencil', 'image-name': 'pencil.svg', glass: true }],
       shadow: { kind: 'neutral', opacity: 0.55 },
       specular: true,
-      translucency: { enabled: true, value: 0.15 },
+      translucency: { enabled: true, value: 0.45 },
     },
     {
       name: 'Ink',
@@ -163,23 +163,34 @@ const iconJson = {
         {
           name: 'bridge',
           'image-name': 'bridge.svg',
-          glass: false,
+          // Glass ink: the strokes pick up rim highlights, as if etched into the sheet.
+          glass: true,
           'fill-specializations': [{ appearance: 'dark', value: { solid: 'display-p3:0.80000,0.88000,1.00000,1.00000' } }],
         },
       ],
-      shadow: { kind: 'none', opacity: 0.5 },
-      translucency: { enabled: false, value: 0.5 },
+      shadow: { kind: 'neutral', opacity: 0.4 },
+      specular: true,
+      translucency: { enabled: true, value: 0.2 },
     },
     {
       name: 'Glass sheet',
-      layers: [{ name: 'sheet', 'image-name': 'sheet.svg', glass: true, opacity: 0.85 }],
+      layers: [
+        {
+          name: 'sheet',
+          'image-name': 'sheet.svg',
+          glass: true,
+          opacity: 0.85,
+          // In dark mode the sheet turns to smoked glass, close to black, so the light ink carries the icon.
+          'fill-specializations': [{ appearance: 'dark', value: { solid: 'display-p3:0.07000,0.08000,0.10000,1.00000' } }],
+        },
+      ],
       shadow: { kind: 'neutral', opacity: 0.5 },
       specular: true,
       translucency: { enabled: true, value: 0.5 },
     },
     {
       name: 'Glow',
-      layers: [{ name: 'glow', 'image-name': 'glow.svg', glass: false }],
+      layers: [{ name: 'glow', 'image-name': 'glow.svg', glass: false, 'opacity-specializations': [{ appearance: 'dark', value: 0.3 }] }],
       shadow: { kind: 'none', opacity: 0.5 },
       translucency: { enabled: false, value: 0.5 },
     },

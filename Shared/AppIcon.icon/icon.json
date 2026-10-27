@@ -32,7 +32,7 @@
       "specular": true,
       "translucency": {
         "enabled": true,
-        "value": 0.15
+        "value": 0.45
       }
     },
     {
@@ -41,7 +41,7 @@
         {
           "name": "bridge",
           "image-name": "bridge.svg",
-          "glass": false,
+          "glass": true,
           "fill-specializations": [
             {
               "appearance": "dark",
@@ -53,12 +53,13 @@
         }
       ],
       "shadow": {
-        "kind": "none",
-        "opacity": 0.5
+        "kind": "neutral",
+        "opacity": 0.4
       },
+      "specular": true,
       "translucency": {
-        "enabled": false,
-        "value": 0.5
+        "enabled": true,
+        "value": 0.2
       }
     },
     {
@@ -68,7 +69,15 @@
           "name": "sheet",
           "image-name": "sheet.svg",
           "glass": true,
-          "opacity": 0.85
+          "opacity": 0.85,
+          "fill-specializations": [
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "display-p3:0.07000,0.08000,0.10000,1.00000"
+              }
+            }
+          ]
         }
       ],
       "shadow": {
@@ -87,7 +96,13 @@
         {
           "name": "glow",
           "image-name": "glow.svg",
-          "glass": false
+          "glass": false,
+          "opacity-specializations": [
+            {
+              "appearance": "dark",
+              "value": 0.3
+            }
+          ]
         }
       ],
       "shadow": {
