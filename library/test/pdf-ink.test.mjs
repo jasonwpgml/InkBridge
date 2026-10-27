@@ -110,6 +110,25 @@ describe('pdf export', () => {
     assert.equal(await fs.readFile(path.join(root, 'notes.pdf'), 'latin1'), boxPdf());
   });
 
+  test('page-space ink (one review for every screen size) lands on the same spot', async () => {
+    const { version } = await readContent(root, page);
+    // Page-image px: the page is 1600 px wide, so (30, 300) pt is (160, 1600) px; a blue box covers it.
+    const k = 1600 / 300;
+    const stroke = { id: 's_pdfink002', tool: 'pen', color: '#00ff00', width: 4 * k, points: [[15 * k, 300 * k, 0.5], [45 * k, 300 * k, 0.5]], createdAt: '2026-10-27T00:00:00Z', state: '#page=1' };
+    const meta = { page, contentVersion: version, viewport: { width: 1600, height: 1600 }, device: 'test' };
+    const added = await (await fetch(`${base}/__pr/api/reviews/r_pdfink002/ops`, { method: 'POST', headers: { cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ meta, ops: [{ opId: 'o_pdfink002', type: 'add', stroke }] }) })).json();
+    assert.equal(added.changed, 1);
+    const res = await post({ page });
+    assert.equal(res.headers.get('x-strokes'), '2');
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'pdf-ink-px-'));
+    await fs.writeFile(path.join(dir, 'out.pdf'), Buffer.from(await res.arrayBuffer()));
+    const px = await pixels(path.join(dir, 'out.pdf'), dir);
+    const [r, g, b] = px(30, 300);
+    assert.ok(g > 200 && r < 80 && b < 80, `page-space ink at (30, 300) is ${[r, g, b]}`);
+    // The screen-space stroke from the previous test is still drawn where it was.
+    assert.ok(px(30, 20)[0] > 200);
+  });
+
   test('refuses pages that are not converted documents, and needs the token', async () => {
     assert.equal((await post({ page: 'plain.html' })).status, 400);
     assert.equal((await post({ page: '../x' })).status, 400);

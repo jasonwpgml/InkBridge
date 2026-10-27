@@ -22,6 +22,11 @@ async function ensureWriter() {
   await run('xcrun', ['swiftc', '-O', WRITER_SOURCE, '-o', WRITER], { timeout: 300000 });
 }
 
+// The viewport of a review whose ink is in page-image pixels (client/overlay.js PAGE_SPACE); older reviews of
+// converted documents hold screen coordinates and are mapped back through pageLayout.
+export const PAGE_SPACE = { width: 1600, height: 1600 };
+export const isPageSpace = (viewport) => viewport.width === PAGE_SPACE.width && viewport.height === PAGE_SPACE.height;
+
 // Where pagedHtml puts a page image of w×h px in a viewport: below the 48px header and 12px padding,
 // centred, shrunk to fit the width (minus padding) and the height (100vh - 72px), never enlarged.
 export function pageLayout(viewport, w, h) {
@@ -65,7 +70,7 @@ export async function writeInkPdf(rootReal, store, page, out) {
       if (!sizes.has(n)) sizes.set(n, await pngSize(file).catch(() => null));
       const size = sizes.get(n);
       if (!size) continue;
-      const { x, y, scale } = pageLayout(review.viewport, size[0], size[1]);
+      const { x, y, scale } = isPageSpace(review.viewport) ? { x: 0, y: 0, scale: 1 } : pageLayout(review.viewport, size[0], size[1]);
       const unit = scale * size[0];
       (pages[n] ??= []).push({
         tool: s.tool, color: s.color, kind: s.kind, width: s.width / unit,

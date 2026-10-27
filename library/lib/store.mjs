@@ -12,6 +12,8 @@ const COLOR = /^#[0-9a-f]{6}$/i;
 const TOOLS = new Set(['pen', 'highlighter']);
 const PEN_KINDS = new Set(['gel', 'ballpoint', 'fountain']); // InkBridge Pad pen types
 const MAX_POINTS = 20000;
+// Page-space ink (converted documents) is measured in 1600 px page images, so a wide highlighter on a small screen exceeds 60.
+const MAX_WIDTH = 200;
 const MAX_OPS = 500;
 const CLIENT_ID = /^c_[A-Za-z0-9_-]{6,40}$/;
 
@@ -52,7 +54,7 @@ export function validateStroke(s) {
   check(STROKE_ID.test(s.id), 'stroke.id');
   check(TOOLS.has(s.tool), 'stroke.tool');
   check(COLOR.test(s.color), 'stroke.color');
-  check(isNum(s.width, 0.5, 60), 'stroke.width');
+  check(isNum(s.width, 0.5, MAX_WIDTH), 'stroke.width');
   check(Array.isArray(s.points) && s.points.length >= 1 && s.points.length <= MAX_POINTS, 'stroke.points');
   const points = s.points.map((p) => {
     check(isPoint(p), 'stroke.points[]');
@@ -81,7 +83,7 @@ const isPoint = (p) => Array.isArray(p) && p.length === 3 && isNum(p[0], -1e5, 1
 export function validateLive(body) {
   check(body && CLIENT_ID.test(body.clientId), 'clientId');
   const s = body.stroke;
-  check(s && STROKE_ID.test(s.id) && TOOLS.has(s.tool) && COLOR.test(s.color) && isNum(s.width, 0.5, 60), 'stroke');
+  check(s && STROKE_ID.test(s.id) && TOOLS.has(s.tool) && COLOR.test(s.color) && isNum(s.width, 0.5, MAX_WIDTH), 'stroke');
   check(s.state === undefined || isStr(s.state, 200), 'stroke.state');
   check(s.kind === undefined || PEN_KINDS.has(s.kind), 'stroke.kind');
   check(Number.isInteger(body.from) && body.from >= 0 && body.from <= MAX_POINTS, 'from');

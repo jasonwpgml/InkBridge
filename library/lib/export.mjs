@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { isPageSpace } from './pdf-ink.mjs';
 import { publicReview, writeAtomic } from './store.mjs';
 
 function bbox(points) {
@@ -30,11 +31,13 @@ export function reviewMarkdown(review, snapshotDir) {
     '',
     `- Page: \`${review.page}\``,
     `- Content version: \`${review.contentVersion}\` (snapshot: \`${snapshotDir}\`)`,
-    `- Viewport: ${review.viewport.width}×${review.viewport.height} CSS px`,
+    isPageSpace(review.viewport) && review.page.startsWith('converted/')
+      ? '- Coordinates: page-image px (each page is 1600 px wide; the page number is the `#page=N` state)'
+      : `- Viewport: ${review.viewport.width}×${review.viewport.height} CSS px`,
     `- Device: ${review.device || 'unknown'}`,
     `- Updated: ${review.updatedAt}, revision ${review.revision}, ${review.strokes.length} strokes`,
     '',
-    'Coordinates are document CSS px at the viewport above, measured on the reviewing device. Anchors and context were captured on that device while drawing; they describe the snapshot, not the current file. A page state (URL hash such as `#step=3`) means the stroke was drawn while the page showed that state; open the snapshot with that hash to see it.',
+    'Unless the line above says page-image px, coordinates are document CSS px at the viewport above, measured on the reviewing device. Anchors and context were captured on that device while drawing; they describe the snapshot, not the current file. A page state (URL hash such as `#step=3`) means the stroke was drawn while the page showed that state; open the snapshot with that hash to see it.',
     '',
   ];
   review.strokes.forEach((s, i) => {

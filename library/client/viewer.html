@@ -104,7 +104,8 @@
       main.append(el('h2', { textContent: page, style: 'font-size:16px' }));
       const ul = el('ul');
       for (const r of reviews) {
-        const a = el('a', { href: `?review=${r.id}`, textContent: `${r.viewport.width}×${r.viewport.height} · ${r.strokes}획` });
+        const size = r.viewport.width === 1600 && r.viewport.height === 1600 && /^converted\//.test(r.page) ? '쪽 좌표' : `${r.viewport.width}×${r.viewport.height}`;
+        const a = el('a', { href: `?review=${r.id}`, textContent: `${size} · ${r.strokes}획` });
         ul.append(el('li', {}, a, el('span', { className: 'muted', textContent: ` · 버전 ${r.contentVersion.slice(0, 8)} · ${new Date(r.updatedAt).toLocaleString()} · ${deviceName(r.device)}` })));
       }
       main.append(ul);
@@ -124,7 +125,12 @@
     body.append(el('p', { textContent: `리뷰를 찾을 수 없습니다 (${res.status}).`, style: 'padding:16px' }));
     return;
   }
-  const { width, height } = review.viewport;
+  // Ink on converted documents is kept in page coordinates (viewport 1600×1600, see overlay.js PAGE_SPACE), so it is
+  // not tied to the writing screen: show it at the size of this window instead.
+  const pageSpace = /^converted\/.+\/index\.html$/.test(review.page) && review.viewport.width === 1600 && review.viewport.height === 1600;
+  const { width, height } = pageSpace
+    ? { width: Math.max(320, innerWidth - 32), height: Math.max(320, innerHeight - head.getBoundingClientRect().bottom - 48) }
+    : review.viewport;
   const info = el('span', { className: 'muted' });
   const scaleSel = el('select');
   for (const [v, label] of [['fit', '창에 맞춤'], ['1', '100%']]) scaleSel.append(el('option', { value: v, textContent: label }));
@@ -135,7 +141,7 @@
     ? el('a', { href: `?review=${encodeURIComponent(id)}`, textContent: '따라가기 끄기' })
     : el('a', { href: followUrl(id), textContent: '따라가기' });
   head.append(el('a', { href: '?', textContent: '목록' }), followLink, el('strong', { textContent: review.page }), info, scaleSel, exportBtn, pdfBtn, exportOut);
-  info.textContent = `${width}×${height} · 버전 ${review.contentVersion.slice(0, 8)} · ${review.strokes.length}획 · ${review.device.slice(0, 50)}`;
+  info.textContent = `${pageSpace ? '쪽 좌표' : `${width}×${height}`} · 버전 ${review.contentVersion.slice(0, 8)} · ${review.strokes.length}획 · ${review.device.slice(0, 50)}`;
 
   const stage = el('div', { id: 'stage' });
   const box = el('div', { id: 'frameBox' });

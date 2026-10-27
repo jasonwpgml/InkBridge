@@ -100,6 +100,21 @@
   const sameViewport = (a, b) => a && b && a.width === b.width && a.height === b.height;
   const reviewKey = (vp) => `pr:review:${PAGE}|${VERSION}|${vp.width}x${vp.height}`;
 
+  // Paged documents (converted PDF, slides, Word) keep ink in page-image pixels instead of screen pixels, so every
+  // screen size shares one review and the Mac and the iPad see the same notes. Such a review's viewport is
+  // PAGE_SPACE (lib/pdf-ink.mjs reads it the same way); reviews written before keep their screen coordinates.
+  const PAGE_IMG = PAGED ? document.getElementById('page') : null;
+  const PAGE_SPACE = { width: 1600, height: 1600 };
+  const reviewViewport = () => (PAGE_IMG ? PAGE_SPACE : viewport);
+  const inPageSpace = () => !!PAGE_IMG && sameViewport(state.review?.meta.viewport ?? PAGE_SPACE, PAGE_SPACE);
+
+  // Where ink unit (0, 0) sits in the document and how many document px one unit spans.
+  function inkFrame() {
+    if (!inPageSpace()) return { x: 0, y: 0, k: 1 };
+    const r = PAGE_IMG.getBoundingClientRect();
+    return { x: r.left + window.scrollX, y: r.top + window.scrollY, k: r.width / Number(PAGE_IMG.getAttribute('width')) || 1 };
+  }
+
   function bboxOf(s) {
     if (s._bbox) return s._bbox;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -252,7 +267,7 @@
 
   function ensureReview() {
     if (!state.review) {
-      state.review = { id: uid('r_'), revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport, device: navigator.userAgent.slice(0, 200) } };
+      state.review = { id: uid('r_'), revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport: reviewViewport(), device: navigator.userAgent.slice(0, 200) } };
     }
     try {
       localStorage.setItem(reviewKey(state.review.meta.viewport), state.review.id);
@@ -267,24 +282,25 @@
       const r = await fetchReview(FIXED_REVIEW);
       // A review the iPad has opened but not written in yet is not on the server; its first delta starts it.
       state.review = r ? { id: r.id, revision: r.revision, meta: { page: r.page, contentVersion: r.contentVersion, viewport: r.viewport, device: r.device } }
-        : { id: FIXED_REVIEW, revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport, device: '' } };
+        : { id: FIXED_REVIEW, revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport: reviewViewport(), device: '' } };
       return applyServer(r);
     }
+    const vp = reviewViewport();
     let id = null;
     try {
-      id = localStorage.getItem(reviewKey(viewport));
+      id = localStorage.getItem(reviewKey(vp));
     } catch {
       // Fall through to the server lookup.
     }
     if (!id) {
       try {
-        const res = await fetch(`${API}/reviews?page=${encodeURIComponent(PAGE)}&version=${VERSION}&w=${viewport.width}&h=${viewport.height}`);
+        const res = await fetch(`${API}/reviews?page=${encodeURIComponent(PAGE)}&version=${VERSION}&w=${vp.width}&h=${vp.height}`);
         if (res.ok) id = (await res.json())[0]?.id ?? null;
       } catch {
         // Offline: a new review is created locally on the first stroke.
       }
     }
-    state.review = id ? { id, revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport, device: navigator.userAgent.slice(0, 200) } } : null;
+    state.review = id ? { id, revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport: vp, device: navigator.userAgent.slice(0, 200) } } : null;
     await applyServer(id ? await fetchReview(id) : null);
   }
 
@@ -372,16 +388,22 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (state.hidden) return;
-    ctx.setTransform(band.dpr, 0, 0, band.dpr, 0, -band.top * band.dpr);
+    const f = setInkTransform();
     const bottom = band.top + band.height;
     for (const s of visibleStrokes()) {
       const b = bboxOf(s);
-      if (b[3] >= band.top && b[1] <= bottom) drawStroke(s, 0);
+      if (b[3] * f.k + f.y >= band.top && b[1] * f.k + f.y <= bottom) drawStroke(s, 0);
     }
     for (const { stroke } of live.values()) {
       if (isVisible(stroke) && stroke.points.length) drawStroke(stroke, 0);
     }
     if (state.active?.stroke) drawStroke(state.active.stroke, 0);
+  }
+
+  function setInkTransform() {
+    const f = inkFrame();
+    ctx.setTransform(band.dpr * f.k, 0, 0, band.dpr * f.k, band.dpr * f.x, band.dpr * (f.y - band.top));
+    return f;
   }
 
   // Pen kinds follow PencilKit's look: gel varies with pressure, ballpoint is even, fountain is a 45° broad nib.
@@ -442,7 +464,7 @@
 
   function drawIncrement(s, from) {
     if (state.hidden) return;
-    ctx.setTransform(band.dpr, 0, 0, band.dpr, 0, -band.top * band.dpr);
+    setInkTransform();
     drawStroke(s, from);
   }
 
@@ -468,6 +490,8 @@
   }
 
   function captureAnchors(s) {
+    // A page image has no elements or text under the ink to record.
+    if (inPageSpace()) return { anchors: [], context: '' };
     const [x0, y0, x1, y1] = bboxOf(s);
     const samples = [[(x0 + x1) / 2, (y0 + y1) / 2], [x0, y0], [x1, y0], [x0, y1], [x1, y1], s.points[0]];
     const seen = new Set();
@@ -502,7 +526,7 @@
 
   function canDraw() {
     if (EXPORT || state.hidden) return false;
-    if (FIXED_REVIEW) return !!state.review && sameViewport(viewport, state.review.meta.viewport);
+    if (FIXED_REVIEW) return !!state.review && sameViewport(reviewViewport(), state.review.meta.viewport);
     return true;
   }
 
@@ -519,8 +543,9 @@
     // Document CSS px (clientX + scrollX, i.e. pageX); no visualViewport scale correction (see DESIGN.md 4-c).
     // Synthetic events report pageX without the scroll offset, so it is computed here.
     const pressure = e.pointerType === 'pen' ? Math.max(0.05, Math.min(1, e.pressure || 0.5)) : 0.5;
-    const x = e.clientX + window.scrollX;
-    const y = e.clientY + window.scrollY;
+    const f = inkFrame();
+    const x = (e.clientX + window.scrollX - f.x) / f.k;
+    const y = (e.clientY + window.scrollY - f.y) / f.k;
     return [Math.round(x * 10) / 10, Math.round(y * 10) / 10, Math.round(pressure * 1000) / 1000];
   }
 
@@ -546,7 +571,7 @@
       pointerId: e.pointerId,
       tap: tappable && !tappable.closest('#__pr-bar') ? { target: tappable, at: performance.now() } : null,
       stroke: {
-        id: uid('s_'), tool: state.tool, color: ink.color, width: ink.width, kind: state.tool === 'pen' ? ink.kind : undefined,
+        id: uid('s_'), tool: state.tool, color: ink.color, width: Math.round((ink.width / inkFrame().k) * 100) / 100, kind: state.tool === 'pen' ? ink.kind : undefined,
         points: [pointOf(e)], createdAt: new Date().toISOString(), state: pageState(),
       },
     };
@@ -578,7 +603,9 @@
     if (pts.length > from) {
       sendLive(a);
       delete a.stroke._bbox;
-      if (pts[pts.length - 1][1] < band.top || pts[pts.length - 1][1] > band.top + band.height) layoutBand(true);
+      const f = inkFrame();
+      const y = pts[pts.length - 1][1] * f.k + f.y;
+      if (y < band.top || y > band.top + band.height) layoutBand(true);
       else drawIncrement(a.stroke, from);
     }
   }
@@ -610,7 +637,8 @@
   function isTap(s, startedAt) {
     if (performance.now() - startedAt > TAP_MAX_MS) return false;
     const [x0, y0] = s.points[0];
-    return s.points.every(([x, y]) => Math.abs(x - x0) <= TAP_MAX_MOVE && Math.abs(y - y0) <= TAP_MAX_MOVE);
+    const max = TAP_MAX_MOVE / inkFrame().k;
+    return s.points.every(([x, y]) => Math.abs(x - x0) <= max && Math.abs(y - y0) <= max);
   }
 
   // Touch defaults were cancelled for the pen, so the press is replayed here.
@@ -637,10 +665,11 @@
 
   function eraseAt(p) {
     let hit = false;
+    const radius = ERASE_RADIUS / inkFrame().k;
     for (const s of visibleStrokes()) {
       const b = bboxOf(s);
-      if (p[0] < b[0] - ERASE_RADIUS || p[0] > b[2] + ERASE_RADIUS || p[1] < b[1] - ERASE_RADIUS || p[1] > b[3] + ERASE_RADIUS) continue;
-      const limit = ERASE_RADIUS + s.width / 2;
+      if (p[0] < b[0] - radius || p[0] > b[2] + radius || p[1] < b[1] - radius || p[1] > b[3] + radius) continue;
+      const limit = radius + s.width / 2;
       const pts = s.points;
       const touched = pts.length === 1 ? Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1]) <= limit
         : pts.some((q, i) => i > 0 && distToSegment(p, pts[i - 1], q) <= limit);
@@ -735,10 +764,11 @@
   function adoptReview(id, meta) {
     // Another device just started the review this page is showing.
     if (state.review || FIXED_REVIEW || !meta) return false;
-    if (meta.page !== PAGE || meta.contentVersion !== VERSION || !sameViewport(meta.viewport, viewport)) return false;
-    state.review = { id, revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport, device: navigator.userAgent.slice(0, 200) } };
+    const vp = reviewViewport();
+    if (meta.page !== PAGE || meta.contentVersion !== VERSION || !sameViewport(meta.viewport, vp)) return false;
+    state.review = { id, revision: 0, meta: { page: PAGE, contentVersion: VERSION, viewport: vp, device: navigator.userAgent.slice(0, 200) } };
     try {
-      localStorage.setItem(reviewKey(viewport), id);
+      localStorage.setItem(reviewKey(vp), id);
     } catch {
       // The server lookup finds it next time.
     }
@@ -1383,7 +1413,7 @@
     const parts = [`${viewport.width}×${viewport.height}`, pageState() ? `${pageState()} ${shown}획 (전체 ${state.strokes.length})` : `${shown}획`];
     let warn = false;
     if (MODE === 'snapshot') parts.push(`스냅숏 ${VERSION.slice(0, 6)}`);
-    if (FIXED_REVIEW && state.review && !sameViewport(viewport, state.review.meta.viewport)) {
+    if (FIXED_REVIEW && state.review && !sameViewport(reviewViewport(), state.review.meta.viewport)) {
       parts.push(`리뷰 ${state.review.meta.viewport.width}×${state.review.meta.viewport.height}와 크기 다름 · 보기 전용`);
       warn = true;
     }
@@ -1443,6 +1473,10 @@
     svg.setAttribute('width', width);
     svg.setAttribute('height', height);
     svg.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;z-index:2147483000';
+    const f = inkFrame();
+    const group = document.createElementNS(ns, 'g');
+    group.setAttribute('transform', `translate(${f.x} ${f.y}) scale(${f.k})`);
+    svg.append(group);
     for (const s of visibleStrokes()) {
       const path = document.createElementNS(ns, 'path');
       path.setAttribute('d', s.points.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' '));
@@ -1453,7 +1487,7 @@
       path.setAttribute('stroke-linecap', 'round');
       path.setAttribute('stroke-linejoin', 'round');
       if (s.tool === 'highlighter') path.setAttribute('stroke-opacity', '0.35');
-      svg.append(path);
+      group.append(path);
     }
     document.documentElement.append(svg);
     document.fonts?.ready.then(() => (window.__prReady = true)) ?? (window.__prReady = true);
@@ -1496,7 +1530,8 @@
         if (sameViewport(next, viewport)) return layoutBand(true);
         viewport = next;
         // A different viewport means a different layout: switch to that viewport's review (DESIGN.md #1).
-        if (!FIXED_REVIEW && !state.active) {
+        // Page-space ink belongs to the page, not the screen, so it keeps its review.
+        if (!FIXED_REVIEW && !PAGE_IMG && !state.active) {
           state.undo = [];
           state.redo = [];
           await selectReview();
